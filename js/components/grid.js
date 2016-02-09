@@ -116,7 +116,7 @@ GridComponent.propTypes = {
 
 function select(state) {
   return {
-    data: preprocessData(state.grid.data, state.grid.portlist, {header: state.grid.header}, state.grid.changelist),
+    data: preprocessData(state.grid.data, state.grid.portlist, {header: state.grid.header, hierarchy: state.grid.hierarchy}, state.grid.changelist),
     isFetching: state.grid.isFetching,
     portlist: state.grid.portlist,
     meta: state.grid.meta,

@@ -21,6 +21,7 @@ function handleGridActions (state, action) {
         meta: action.meta,
         portlist: action.portlist,
         header: action.header,
+        hierarchy: action.hierarchy,
         changelist: []
       }
 

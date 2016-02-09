@@ -19,10 +19,15 @@ DEFAULT: {
 
 
 INDEXMAP: {
+  sec_name: 3,
+  asset_class: 4,
+  region: 5,
+  sec_class: 7,
   cur: 8,
   trg: 9,
   bmk: 10,
-  currency: 11
+  currency: 11,
+  cashflow: 12
 }
 
 }

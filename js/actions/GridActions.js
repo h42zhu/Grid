@@ -1,5 +1,5 @@
 import CONSTS from '../constants/constants'
-import { preprocessPortList } from '../util/util'
+import { preprocessPortList, arrayToTree } from '../util/util'
 
 function paginate(id, direction) {
     
@@ -48,9 +48,10 @@ function receiveData(comp, data) {
     return ({
         type: CONSTS.ACTIONS.RECEIVEDATA,
         comp: comp,
-        data: data.tree,
+        data: arrayToTree(data.tree),
         meta: data.meta,
         portlist: preprocessPortList(data.meta.portListMap),
+        hierarchy: ['asset_class', 'region'],
         header: [{col: 'cur', name: 'Cur', style: {editable: false}}, {col: 'trg', name: 'Trg', style: {editable: true}}, {col: 'bmk', name: 'Bmk', style: {editable: false}}]
     })
 }

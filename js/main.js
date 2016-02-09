@@ -14,8 +14,8 @@ const initialState = {
     grid: {
         portlist: [],
         header: [{col: 'cur', name: 'Cur', style: {editable: false}}, {col: 'trg', name: 'Trg', style: {editable: true}}, {col: 'bmk', name: 'Bmk', style: {editable: false}}],
-        hierarchy: [],
-        data: [],
+        hierarchy: ['asset_class', 'region'],
+        data: {},
         meta: [],
         changelist: [],
         isFetching: false

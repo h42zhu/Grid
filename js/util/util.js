@@ -1,4 +1,5 @@
 import CONSTS from '../constants/constants'
+import lodash from 'lodash'
 
 // header columns to display
 function preprocessPortList(portListMap) {
@@ -24,6 +25,7 @@ function styleMerge(st1, st2) {
     return (newStyle)
 }
 
+// merge changelist values to the data
 function applyChangelist(data, changelist) {
     var key, arrkey, col, port_id, sec_id, i, j
     for (i = 0; i < changelist.length; i = i + 1) {
@@ -46,50 +48,51 @@ function applyChangelist(data, changelist) {
 
 // equavalent to
 // select {col} from data where port_id = port_id and {some custome logic in cond}
-function gridQuery (data, portFilter, col='all', cond={}) {
-    
-    let portData = data.filter(item => item[0] in portFilter)
+function gridQuery (data, portFilter, cond={}) {
+    var result = [], port = [], i
+    for (i = 0; i < data.length; i = i + 1) {
+        port = data[i]['port'].filter(item => item['port_id'] in portFilter)
+        if (port.length > 0) {
+            result.push(data[i])
+            result[result.length-1]['port'] = port
+        }
+    }
     
     if (cond.changelist) {
-        portData = applyChangelist(portData, cond.changelist)
+        result = applyChangelist(result, cond.changelist)
     }
     
-    if (col != 'all' && CONSTS.INDEXMAP[col]) {
-        portData = portData.map(item => item[CONSTS.INDEXMAP[col]])
-    }
-    
-    return portData
+    return result
 }
 
-function calcSubTotal (data, port_id, col, cond={}) {
-    let portFileter = {}
-    portFileter[port_id] = null
-    let colData = gridQuery(data, portFileter, col, cond)
+// sub
+function calcSubTotal (subtotal, port) {
+
 
     return colData.reduce((curr, acc) => curr + acc, 0)
 }
 
 
-// 
+// returns a list of objects
 function rowPopulate (data, portlist, header, rowstyle) {
-    if (data.length == 0 || data[0].length == 0) {
+    if (!data || !portlist || lodash.isEmpty(data)) {
         return []
     }
-    var skey = data[0][1].toString()
-    var row = [{'key': skey, 'data': data[0][3],
+
+    var row = [{'key': data['secid'], 'data': data['sec_name'],
                'style': {'editable': false, 'width': '300px'}}],
         port_id, j, k, found
         
-    for (var port_id in portlist) {
+    for (port_id in portlist) {
         found = false
-        for (j = 0; j < data.length; j = j + 1) {
-            if (data[j][0].toString() == port_id) {
+        for (j = 0; j < data['port'].length; j = j + 1) {
+            if (data['port'][j]['port_id'] == parseInt(port_id)) {
                 found = true
                 
                 for (k = 0; k < header.length; k = k + 1) {
                     row.push({
-                        'key': header[k].col + '_' + port_id + '_' + skey,
-                        'data': data[j][header[k].colIndex],
+                        'key': header[k].col + '_' + port_id + '_' + data['secid'].toString(),
+                        'data': data['port'][j][header[k].col],
                         'style': styleMerge(rowstyle, header[k].style)
                     })
                 }
@@ -100,7 +103,7 @@ function rowPopulate (data, portlist, header, rowstyle) {
         if (!found) {
             for (k = 0; k < header.length; k = k + 1) {
                 row.push({
-                    'key': header[k].col + '_' + port_id + '_' + skey,
+                    'key': header[k].col + '_' + port_id + '_' + data['secid'].toString(),
                     'data': '',
                     'style': styleMerge(rowstyle, header[k].style)})
                 
@@ -111,38 +114,71 @@ function rowPopulate (data, portlist, header, rowstyle) {
 }
 
 
-function totalRowPopulate(data, portlist, header, rowstyle, cond={}) {
-    if (data.length == 0 || data[0].length == 0) {
-        return []
-    }
+const secInfo = ['sec_name', 'asset_class', 'region', 'sec_class', 'currency']
+
+// given a nested array, return an array of object
+function arrayToTree(data) {
+    var dataObj = [], secId, i, j, idx
     
-    var totalType = Object.keys(cond).length === 0? 'grand': cond.key
-    var skey = 'total_' + totalType
-    var row = [{'key': skey, 'data': 'Grand Total',
-               'style': {'editable': false, 'width': '300px'}}],
-        port_id, k, totalVal
+    for (i=0; i < data.length; i=i+1) {
+        secId = data[i][1]
         
-    for (port_id in portlist) {
-        for (k = 0; k < header.length; k = k + 1) {
-            totalVal = calcSubTotal(data, port_id, header[k].col, cond)
-            row.push({
-                'key': header[k].col + '_' + port_id + '_' + skey,
-                'data': totalVal,
-                'style': styleMerge(rowstyle, header[k].style)
-            })
+        idx = lodash.findIndex(dataObj, item => item.secid == secId)
+        
+        if (idx >= 0) {
+            dataObj[idx]['port'].push({
+                'port_id': data[i][0],
+                'cur': data[i][CONSTS.INDEXMAP['cur']],
+                'trg': data[i][CONSTS.INDEXMAP['trg']],
+                'bmk': data[i][CONSTS.INDEXMAP['bmk']]
+                })
+        } else {
+            dataObj.push({'secid': secId})
+            for (j=0; j < secInfo.length; j=j+1) {
+                dataObj[dataObj.length-1][secInfo[j]] = data[i][CONSTS.INDEXMAP[secInfo[j]]]
+            }
+            dataObj[dataObj.length-1]['port'] = [{'port_id': data[i][0],
+                                       'cur': data[i][CONSTS.INDEXMAP['cur']],
+                                       'trg': data[i][CONSTS.INDEXMAP['trg']],
+                                       'bmk': data[i][CONSTS.INDEXMAP['bmk']]
+                                      }]
         }
+        
     }
-    
-    return (row)
-    
+    return dataObj
 }
 
-// param:
-// data = raw data from sql
-// hierarchy = array .. eg. ['asset class', 'region']
-function preprocessData(data, portlist=[], config={header:[]}, changelist) {
-    var processedData = [],
-        header = config.header, secData
+
+function applyHierarchyHelper(data, hierarchy) {
+    var prop
+    if (!hierarchy || hierarchy.length == 0) {
+        return data
+    } else {
+        for (prop in data) {
+            data[prop] = applyHierarchy(data[prop], hierarchy)
+        }
+        return data
+    }
+}
+
+
+function applyHierarchy(data, hierarchy) {
+    
+    if (hierarchy.length == 0 && typeof data == 'object') {
+        return data
+    } else if (hierarchy.length == 0 && data instanceof Array) {
+        return lodash.groupBy(data, item=>item['sec_class'])
+    }
+    else {
+        return applyHierarchyHelper(lodash.groupBy(data, item=>item[hierarchy[0]]), hierarchy.slice(1))
+    }
+}
+
+
+// param: data = raw data from sql
+function preprocessData(data, portlist=[], config={header:[], hierarchy:[]}, changelist) {
+    var processedData,
+        header = config.header, hierachry = config.hierarchy, i, j
     
     if (!data || !portlist || !config || !header
         || portlist.length == 0 || header.length == 0) {
@@ -153,74 +189,85 @@ function preprocessData(data, portlist=[], config={header:[]}, changelist) {
                         obj[port.port_id] = null
                         return obj}, {})
     
-    let portData = gridQuery(data, portFilter)
+    // filtered port_data
+    let portData = applyHierarchy(gridQuery(data, portFilter), hierachry)
+
+    processedData = recursiveRender(portData, header, portFilter, 'header')
     
-    let secList = portData.reduce(function(unique, sec) {
-        if (unique.indexOf(sec[1]) < 0) {
-            unique.push(sec[1])
-        }
-        return unique
-    }, [])
-    
-    header = header.map(item => Object.assign(item, {colIndex: CONSTS.INDEXMAP[item.col]}))
-    
-    for (var i = 0; i < secList.length; i = i + 1){
-        secData = portData.filter(item => item[1] == secList[i])
-        processedData.push(rowPopulate(secData, portFilter, header, {editable: true}))
-    }
-    
-    // add the grant total row
-    processedData.push(totalRowPopulate(data, portFilter, header, {editable: false}, {key: 'grand', changelist: changelist}))
     
     return processedData
 }
 
-
-// all functions below deal with transforming of nested json objects into plain arrays
-// may not need anymore
-function fillEmpty (val, style, arrLength) {
-    var row = [{'key': val, 'data': val, 'style': style}]
-    for (var i = 0; i < arrLength; i = i + 1) {
-        row.push({
-            'key': val + "_" + i.toString(),
-            'data': "",
-            'style': style})
+function mergeTotalRow(data, total) {
+    var i, idx, prop
+    
+    if (!data || !data.port) {
+        return total
     }
-    return (row)
+    data = data.port
+    for (i=0; i < data.length; i=i+1) {
+        idx = lodash.findIndex(total, item => item['port_id'] == data[i]['port_id'])
+        if (idx && idx >= 0) {
+            for (prop in total[idx]) {
+                if (prop != 'port_id') {
+                    total[idx][prop] = total[idx][prop] + data[i][prop]
+                }
+            }
+        } else {
+            total.push(data[i])
+        }
+    }
+    return total
+}
+// totalRow
+// returns a list of objs representing the subtotal
+function totalRow(data, total) {
+    var prop, i
+    if (data && data.port) {
+        total = mergeTotalRow(data, total)
+    } else if (data instanceof Array && data.length > 0) {
+        for (i=0; i < data.length; i=i+1) {
+            total = mergeTotalRow(data[i], total)
+        }
+    } else if (data && Object.keys(data).length > 0) {
+        for (prop in data) {
+            total = mergeTotalRow(totalRow(data[prop], total), total)
+        }
+    }
+    
+    return total
+    
 }
 
 
-/*
-
-function recursiveRender (dataArr, retArr, meta) {
-    for (var i = 0; i < dataArr.length; i = i + 1) {
-        retArr = retArr.concat(recursiveRenderHelper(dataArr[i], meta))
+function recursiveRenderHelper (data, header, portlist) {
+    var retArr = []
+    for (var i = 0; i < data.length; i = i + 1) {
+        retArr.push(rowPopulate(data[i], portlist, header, {editable: true}))
     }
-    return (retArr)
+    return retArr
 }
 
+// {'key': data['secid'], 'data': data['sec_name'],
+//               'style': {'editable': false, 'width': '300px'}}
 
-function recursiveRenderHelper (data, meta) {
-    var items = [], rowLegnth, header
-    if ('group_name' in data && 'children' in data) {
-        // add header row
-        rowLegnth = meta.port_list.length * meta.col.length
-        header = fillEmpty(data.group_name, meta.rowstyle.headerrow ,rowLegnth)
-        items.push(header)
-        
-        items = items.concat(recursiveRender(data.children, [], meta))
-        // add total row
-        items.push(rowPopulate(data.total_row, 'total_' + data.group_name, 'Total ' + data.group_name, meta, 'headerrow'))
-        
-    } else if ('security_id' in data) {
-        items.push(rowPopulate(data.children, data.security_id, data.security_name, meta, 'datarow'))
-    } else {
-        return []
+function recursiveRender (data, header, portlist, rid='') {
+    var items = [], prop
+    if (data instanceof Array && data.length > 0) {
+        items = items.concat(recursiveRenderHelper(data, header, portlist))
+    } else if (data && Object.keys(data).length > 0) {
+        for (prop in data) {
+            items.push(rowPopulate({'secid': rid + '_' + prop, 'sec_name': prop, 'port': []}, portlist, header, {editable: false}))
+            items = items.concat(recursiveRender(data[prop], header, portlist, rid + '_' + prop))
+            items.push(rowPopulate({'secid': rid + '_total_' + prop, 'sec_name': 'Total ' + prop, 'port': totalRow(data[prop], [])}, 
+                                   portlist, header, {editable: false}))
+        }
     }
+    
     return items
-}*/
+}
 
-//
+
 function mergeChangeList(state, changeCell) {
     let found = false
     let nextState = Object.assign({}, state)
@@ -239,4 +286,4 @@ function mergeChangeList(state, changeCell) {
 }
 
 
-export { preprocessPortList, preprocessData, mergeChangeList }
+export { preprocessPortList, preprocessData, mergeChangeList, arrayToTree }
