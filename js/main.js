@@ -1,29 +1,26 @@
 import { Provider } from 'react-redux'
 import React from 'react'
 import ReactDOM from 'react-dom'
-import GridComponent from './components/grid'
+import GridComponent from './components/GridComponent'
 import configureStore from './store/store'
-//import SidebarComponent from './components/sidebar'
-import { paginate, filterBy, editCell, fetchData } from './actions/GridActions'
-
 
 // Define the initial state properties here
 const initialState = {
-    
-    // Grid state 
+
+    // Grid state
     grid: {
-        portlist: [],
-        header: [{col: 'cur', name: 'Cur', style: {editable: false}}, {col: 'trg', name: 'Trg', style: {editable: true}}, {col: 'bmk', name: 'Bmk', style: {editable: false}}],
-        hierarchy: ['asset_class', 'region'],
-        data: {},
+        data: [],
         meta: [],
         changelist: [],
-        isFetching: false
+        isFetching: false,
+        vtree : {}
     },
 
     // Panel State
     panel: {
-        
+        heir: ["asset_class", "region"],
+        cols: ["cur", "trg", "bmk"],
+        portSelected: [5866, 3676]
     }
 }
 
@@ -36,5 +33,3 @@ ReactDOM.render(
      document.getElementById('grid')
 
 );
-
-

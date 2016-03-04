@@ -16,7 +16,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var app = express();
 
-var DATA_FILE = path.join(__dirname, 'port_data.json');
+var DATA_FILE = path.join(__dirname, 'port_data_alt.json');
 
 app.set('port', (process.env.PORT || 3000));
 

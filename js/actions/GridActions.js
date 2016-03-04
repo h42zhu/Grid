@@ -1,78 +1,30 @@
-import CONSTS from '../constants/constants'
-import { preprocessPortList, arrayToTree } from '../util/util'
+import {ACTIONS} from '../constants/Constants'
+import {createTree} from '../util/ViewUtil'
+import _ from 'lodash'
 
-function paginate(id, direction) {
-    
+
+function buildVTree(data, portlist, hier, cols) {
+    var fdata = data.filter(item => _.includes(portlist, item['port_id']))
+
     return ({
-        type: CONSTS.ACTIONS.PAGINATE,
+        type: ACTIONS.BUILDVTREE,
+        portlist: portlist,
+        hier: hier,
+        vtree: createTree(fdata, hier, cols)
+
+    })
+
+}
+
+function editCell(pos, ndata, odata) {
+    return ({
+        type: ACTIONS.EDITCELL,
         comp: 'grid',
-        id: id,
-        data: {
-            direction: direction
-        }
+        pos: pos,
+        data: ndata,
+        odata: odata,
     })
 }
 
 
-
-function filterBy(id, filter) {
-    
-    return ({
-        type: CONSTS.ACTIONS.FILTER,
-        comp: 'grid',
-        id: id,
-        data: {
-            filter: filter
-        }
-    })
-}
-
-function editCell(id, data) {
-    return ({
-        type: CONSTS.ACTIONS.EDITCELL,
-        comp: 'grid',
-        id: id,
-        data: data
-    })
-}
-
-
-function requestData(comp) {
-    return ({
-        type: CONSTS.ACTIONS.REQUESTDATA,
-        comp: comp
-    })
-}
-
-function receiveData(comp, data) {
-    return ({
-        type: CONSTS.ACTIONS.RECEIVEDATA,
-        comp: comp,
-        data: arrayToTree(data.tree),
-        meta: data.meta,
-        portlist: preprocessPortList(data.meta.portListMap),
-        hierarchy: ['asset_class', 'region'],
-        header: [{col: 'cur', name: 'Cur', style: {editable: false}}, {col: 'trg', name: 'Trg', style: {editable: true}}, {col: 'bmk', name: 'Bmk', style: {editable: false}}]
-    })
-}
-
-
-// thunk action creator for async data
-
-function shouldFetchData ({grid}) {
-  return (!grid.data || !grid.isFetching)
-}
-
-function fetchData (url, grid='grid') {
-    return function (dispatch) {
-        dispatch(requestData(grid))
-    
-        return fetch(url)
-          .then(response => response.json())
-          .then(json =>
-            dispatch(receiveData(grid, json))
-        )
-    }
-}
-
-export { paginate, filterBy, editCell, fetchData }
+export {buildVTree, editCell}

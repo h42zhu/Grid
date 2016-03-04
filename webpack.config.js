@@ -23,7 +23,7 @@ var babelLoader = {
   query: {
     cacheDirectory: true,
     plugins: ['transform-runtime', 'babel-plugin-add-module-exports'],
-    presets: ['es2015', 'stage-0', 'react']
+    presets: ['es2015', 'react']
   }
 }
 
@@ -31,21 +31,21 @@ var babelLoader = {
 var production = {
     entry: "./js/main.js",
     output: output,
-    
+
     module: {
         loaders: [].concat(
             assetsLoaders, babelLoader
         )
     },
-    
+
     standard: {
       parser: 'babel-eslint'
     },
-    
+
     resolve: {
       extensions: ['', '.js', '.styl']
     },
-    
+
     stats: {
       colors: true
     }

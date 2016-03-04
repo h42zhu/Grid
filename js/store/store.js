@@ -1,6 +1,6 @@
 import { createStore, applyMiddleware } from 'redux'
 import thunkMiddleware from 'redux-thunk'
-import GridReducers from '../reducers/GridReducers'
+import GridReducer from '../reducers/GridReducers'
 
 const createStoreWithMiddleware = applyMiddleware(
     thunkMiddleware
@@ -8,7 +8,7 @@ const createStoreWithMiddleware = applyMiddleware(
 
 
 function configureStore(initialState) {
-  return createStoreWithMiddleware(GridReducers, initialState)
+    return createStoreWithMiddleware(GridReducer, initialState)
 }
 
 export default configureStore

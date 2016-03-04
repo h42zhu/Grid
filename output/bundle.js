@@ -56,15 +56,13 @@
 
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 
-	var _grid = __webpack_require__(180);
+	var _GridComponent = __webpack_require__(180);
 
-	var _grid2 = _interopRequireDefault(_grid);
+	var _GridComponent2 = _interopRequireDefault(_GridComponent);
 
-	var _store = __webpack_require__(245);
+	var _store = __webpack_require__(251);
 
 	var _store2 = _interopRequireDefault(_store);
-
-	var _GridActions = __webpack_require__(238);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -73,26 +71,27 @@
 
 	    // Grid state
 	    grid: {
-	        portlist: [],
-	        header: [{ col: 'cur', name: 'Cur', style: { editable: false } }, { col: 'trg', name: 'Trg', style: { editable: true } }, { col: 'bmk', name: 'Bmk', style: { editable: false } }],
-	        hierarchy: ['asset_class', 'region'],
-	        data: {},
+	        data: [],
 	        meta: [],
 	        changelist: [],
-	        isFetching: false
+	        isFetching: false,
+	        vtree: {}
 	    },
 
 	    // Panel State
-	    panel: {}
+	    panel: {
+	        heir: ["asset_class", "region"],
+	        cols: ["cur", "trg", "bmk"],
+	        portSelected: [5866, 3676]
+	    }
 	};
-	//import SidebarComponent from './components/sidebar'
 
 	var store = (0, _store2.default)(initialState);
 
 	_reactDom2.default.render(_react2.default.createElement(
 	    _reactRedux.Provider,
 	    { store: store },
-	    _react2.default.createElement(_grid2.default, null)
+	    _react2.default.createElement(_GridComponent2.default, null)
 	), document.getElementById('grid'));
 
 /***/ },
@@ -20514,13 +20513,11 @@
 	 * // => true
 	 */
 	function isPlainObject(value) {
-	  if (!isObjectLike(value) || objectToString.call(value) != objectTag || isHostObject(value)) {
+	  if (!isObjectLike(value) ||
+	      objectToString.call(value) != objectTag || isHostObject(value)) {
 	    return false;
 	  }
-	  var proto = objectProto;
-	  if (typeof value.constructor == 'function') {
-	    proto = getPrototypeOf(value);
-	  }
+	  var proto = getPrototypeOf(value);
 	  if (proto === null) {
 	    return true;
 	  }
@@ -20962,13 +20959,11 @@
 	 * // => true
 	 */
 	function isPlainObject(value) {
-	  if (!isObjectLike(value) || objectToString.call(value) != objectTag || isHostObject(value)) {
+	  if (!isObjectLike(value) ||
+	      objectToString.call(value) != objectTag || isHostObject(value)) {
 	    return false;
 	  }
-	  var proto = objectProto;
-	  if (typeof value.constructor == 'function') {
-	    proto = getPrototypeOf(value);
-	  }
+	  var proto = getPrototypeOf(value);
 	  if (proto === null) {
 	    return true;
 	  }
@@ -21159,6 +21154,10 @@
 
 	'use strict';
 
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
 	var _getPrototypeOf = __webpack_require__(181);
 
 	var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
@@ -21175,13 +21174,9 @@
 
 	var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
 
-	var _inherits2 = __webpack_require__(223);
+	var _inherits2 = __webpack_require__(235);
 
 	var _inherits3 = _interopRequireDefault(_inherits2);
-
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
 
 	var _react = __webpack_require__(4);
 
@@ -21195,117 +21190,183 @@
 
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 
-	var _row = __webpack_require__(230);
+	var _FetchUtil = __webpack_require__(242);
 
-	var _row2 = _interopRequireDefault(_row);
+	var _GridActions = __webpack_require__(245);
 
-	var _constants = __webpack_require__(236);
+	var _Constants = __webpack_require__(243);
 
-	var _constants2 = _interopRequireDefault(_constants);
-
-	var _GridActions = __webpack_require__(238);
-
-	var _util = __webpack_require__(239);
+	var _RowComponent = __webpack_require__(249);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function RowPopulate(rowMeta, portlist, cols, data, action) {
+	    var row = [{
+	        uid: rowMeta.uid,
+	        data: rowMeta.label,
+	        style: { editable: false }
+	    }];
+	    var i, j, idx;
+
+	    if (rowMeta.type == 'superheader') {
+	        for (i = 0; i < data.length; i = i + 1) {
+	            row.push({
+	                uid: rowMeta.uid + '_' + data[i]['port_id'].toString(),
+	                data: data[i]['port_name'],
+	                style: { editable: false, colspan: cols.length, header: true }
+	            });
+	        }
+	    } else if (rowMeta.type == 'header') {
+	        row = row.concat(portlist.map(function (port) {
+	            return cols.map(function (col) {
+	                return {
+	                    uid: port.toString() + "_" + col,
+	                    data: col,
+	                    style: { header: true } };
+	            });
+	        }).reduce(function (arr1, arr2) {
+	            return arr1.concat(arr2);
+	        }));
+	    } else if (rowMeta.type == 'label') {
+	        for (i = 0; i < portlist.length; i = i + 1) {
+	            for (j = 0; j < cols.length; j = j + 1) {
+	                row.push({
+	                    uid: rowMeta.uid + '_' + portlist[i].toString() + '_' + cols[j],
+	                    data: "",
+	                    style: { editable: false }
+	                });
+	            }
+	        }
+	    } else {
+	        for (i = 0; i < portlist.length; i = i + 1) {
+	            idx = _.findIndex(data, function (item) {
+	                return item['port_id'] == portlist[i];
+	            });
+	            for (j = 0; j < cols.length; j = j + 1) {
+	                row.push({
+	                    uid: rowMeta.uid.toString() + '_' + portlist[i].toString() + '_' + cols[j],
+	                    data: idx >= 0 && data[idx][cols[j]] ? data[idx][cols[j]] : "",
+	                    action: action,
+	                    pos: { hier: rowMeta.hier, sec_id: rowMeta.uid, port_id: portlist[i], col: cols[j] },
+	                    style: { editable: rowMeta.type == 'data' && _.includes(_Constants.COLMAP.edit, cols[j]) ? true : false }
+	                });
+	            }
+	        }
+	    }
+
+	    return _react2.default.createElement(_RowComponent.RowComponent, {
+	        key: rowMeta.uid,
+	        uid: rowMeta.uid,
+	        cells: row
+	    });
+	}
 
 	var GridComponent = function (_React$Component) {
 	    (0, _inherits3.default)(GridComponent, _React$Component);
 
 	    function GridComponent(props) {
 	        (0, _classCallCheck3.default)(this, GridComponent);
-	        return (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(GridComponent).call(this, props));
+
+	        var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(GridComponent).call(this, props));
+
+	        _this.recursiveRender = _this.recursiveRender.bind(_this);
+	        _this.headersRender = _this.headersRender.bind(_this);
+	        return _this;
 	    }
 
 	    (0, _createClass3.default)(GridComponent, [{
+	        key: 'headersRender',
+	        value: function headersRender(meta, portlist, cols) {
+	            var rows = [],
+	                superHeader,
+	                rowMeta;
+	            superHeader = meta.portlist.filter(function (item) {
+	                return _.includes(portlist, item['port_id']);
+	            });
+	            rowMeta = { type: 'superheader', uid: 'superheader', label: "" };
+	            rows.push(RowPopulate(rowMeta, portlist, cols, superHeader));
+	            rowMeta = { type: 'header', uid: 'header', label: meta.current_date };
+	            rows.push(RowPopulate(rowMeta, portlist, cols));
+	            return rows;
+	        }
+	    }, {
+	        key: 'recursiveRender',
+	        value: function recursiveRender(vtree, portlist, cols) {
+	            var position = arguments.length <= 3 || arguments[3] === undefined ? [] : arguments[3];
+	            var action = arguments.length <= 4 || arguments[4] === undefined ? null : arguments[4];
+
+	            var rows = [],
+	                i,
+	                rowMeta;
+
+	            if (vtree.children) {
+	                if (vtree.label !== "") {
+	                    rowMeta = { type: 'label', uid: vtree.uid, label: vtree.label };
+	                    rows.push(RowPopulate(rowMeta, portlist, cols));
+	                }
+	                for (i = 0; i < vtree.children.length; i = i + 1) {
+	                    rows = rows.concat(this.recursiveRender(vtree.children[i], portlist, cols, position.concat([i]), action));
+	                }
+	                rowMeta = { type: 'total', uid: 'total_' + vtree.uid, label: 'Total ' + vtree.label };
+	                rows.push(RowPopulate(rowMeta, portlist, cols, vtree.total));
+	            } else if (vtree.rowdata) {
+	                rowMeta = { type: 'data', uid: vtree.uid, label: vtree.label, hier: position };
+	                rows.push(RowPopulate(rowMeta, portlist, cols, vtree.rowdata, action));
+	            }
+	            return rows;
+	        }
+	    }, {
 	        key: 'componentWillMount',
 	        value: function componentWillMount() {
 	            var dispatch = this.props.dispatch;
-	            this.setState({ data: this.props.data });
-	            dispatch((0, _GridActions.fetchData)('/api/port_data'));
+	            dispatch((0, _FetchUtil.fetchData)('/api/port_data'));
 	        }
 	    }, {
 	        key: 'componentWillReceiveProps',
 	        value: function componentWillReceiveProps(nextProps) {
+	            var vtree = nextProps.vtree;
+	            var data = nextProps.data;
+	            var portlist = nextProps.portlist;
+	            var isFetching = nextProps.isFetching;
+	            var meta = nextProps.meta;
+	            var dispatch = nextProps.dispatch;
+	            var hier = nextProps.hier;
+	            var cols = nextProps.cols;
+	            var changelist = nextProps.changelist;
+
+	            if (!isFetching && _.isEmpty(vtree) && data.length > 0) {
+	                dispatch((0, _GridActions.buildVTree)(data, portlist, hier, cols));
+	            }
+
+	            if (vtree && changelist.length > 0) {
+	                this.forceUpdate();
+	            }
 	            console.log(nextProps);
 	        }
 	    }, {
 	        key: 'render',
 	        value: function render() {
 	            var _props = this.props;
+	            var vtree = _props.vtree;
 	            var data = _props.data;
-	            var isFetching = _props.isFetching;
 	            var portlist = _props.portlist;
+	            var isFetching = _props.isFetching;
 	            var meta = _props.meta;
-	            var header = _props.header;
 	            var dispatch = _props.dispatch;
+	            var cols = _props.cols;
 
-	            var headerRows = [],
-	                rows = [],
-	                dataArr,
-	                i,
-	                rkey,
-	                headerData = [{ key: "-2", data: "", style: { header: true } }],
-	                superHeaderData = [{ key: "-1", data: "", style: { header: true } }];
-
-	            // Main Grid once the data finishes fetching
-	            if (!isFetching && data.length > 0) {
-	                // to pass action creators to child components that are unaware of redux store
-	                var boundActionCreators = (0, _redux.bindActionCreators)(_GridActions.editCell, dispatch);
-
-	                if (portlist.length > 0) {
-	                    rkey = 'superheader';
-	                    superHeaderData = superHeaderData.concat(portlist.map(function (port) {
-	                        return {
-	                            key: port['port_id'],
-	                            data: port['name'],
-	                            style: { header: true, colspan: 3 }
-	                        };
-	                    }));
-
-	                    headerRows.push(_react2.default.createElement(_row2.default, {
-	                        key: rkey,
-	                        cells: superHeaderData,
-	                        actions: {}
-	                    }));
-
-	                    rkey = 'header';
-	                    headerData = headerData.concat(portlist.map(function (port) {
-	                        return header.map(function (h) {
-	                            return {
-	                                key: port.port_id.toString() + "_" + h.col,
-	                                data: h.name,
-	                                style: { header: true } };
-	                        });
-	                    }).reduce(function (arr1, arr2) {
-	                        return arr1.concat(arr2);
-	                    }));
-
-	                    headerRows.push(_react2.default.createElement(_row2.default, {
-	                        key: rkey,
-	                        cells: headerData,
-	                        actions: {}
-	                    }));
-	                }
-
-	                for (i = 0; i < data.length; i = i + 1) {
-	                    rows.push(_react2.default.createElement(_row2.default, {
-	                        key: i,
-	                        cells: data[i],
-	                        actions: boundActionCreators
-	                    }));
-	                }
+	            var boundActionCreators = (0, _redux.bindActionCreators)(_GridActions.editCell, dispatch);
+	            var dataRows = [],
+	                headerRows = [];
+	            if (!isFetching && portlist.length > 0 && !_.isEmpty(vtree)) {
+	                dataRows = this.recursiveRender(vtree, portlist, cols, [], boundActionCreators);
+	                headerRows = this.headersRender(meta, portlist, cols);
 	            }
 
 	            return _react2.default.createElement(
 	                'div',
 	                null,
-	                isFetching && _react2.default.createElement(
-	                    'h2',
-	                    null,
-	                    'Loading...'
-	                ),
-	                !isFetching && _react2.default.createElement(
+	                _react2.default.createElement(
 	                    'table',
 	                    { tabIndex: '0' },
 	                    _react2.default.createElement(
@@ -21316,7 +21377,7 @@
 	                    _react2.default.createElement(
 	                        'tbody',
 	                        null,
-	                        rows
+	                        dataRows
 	                    )
 	                )
 	            );
@@ -21325,24 +21386,16 @@
 	    return GridComponent;
 	}(_react2.default.Component);
 
-	/*
-	GridComponent.propTypes = {
-	    dispatch: PropTypes.func.isRequired,
-	    data: PropTypes.array.isRequired,
-	    isFetching: PropTypes.bool.isRequired,
-	    portlist: PropTypes.array.isRequired,
-	    meta: PropTypes.array.isRequired,
-	    header: PropTypes.array.isRequired
-	}
-	*/
-
 	function select(state) {
 	    return {
-	        data: (0, _util.preprocessData)(state.grid.data, state.grid.portlist, { header: state.grid.header, hierarchy: state.grid.hierarchy }, state.grid.changelist),
+	        data: state.grid.data,
+	        vtree: state.grid.vtree,
 	        isFetching: state.grid.isFetching,
-	        portlist: state.grid.portlist,
+	        changelist: state.grid.changelist,
 	        meta: state.grid.meta,
-	        header: state.grid.header
+	        hier: state.panel.heir,
+	        portlist: state.panel.portSelected,
+	        cols: state.panel.cols
 	    };
 	}
 
@@ -21552,7 +21605,7 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	exports.default = (function () {
+	exports.default = function () {
 	  function defineProperties(target, props) {
 	    for (var i = 0; i < props.length; i++) {
 	      var descriptor = props[i];
@@ -21568,7 +21621,7 @@
 	    if (staticProps) defineProperties(Constructor, staticProps);
 	    return Constructor;
 	  };
-	})();
+	}();
 
 /***/ },
 /* 195 */
@@ -21631,18 +21684,24 @@
 
 	"use strict";
 
+	var _typeof = typeof _Symbol === "function" && typeof _Symbol$iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof _Symbol === "function" && obj.constructor === _Symbol ? "symbol" : typeof obj; };
+
 	exports.__esModule = true;
 
-	var _symbol = __webpack_require__(200);
+	var _iterator = __webpack_require__(200);
+
+	var _iterator2 = _interopRequireDefault(_iterator);
+
+	var _symbol = __webpack_require__(225);
 
 	var _symbol2 = _interopRequireDefault(_symbol);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	function _typeof(obj) { return obj && typeof _Symbol !== "undefined" && obj.constructor === _Symbol ? "symbol" : typeof obj; }
-
-	exports.default = function (obj) {
-	  return obj && typeof _symbol2.default !== "undefined" && obj.constructor === _symbol2.default ? "symbol" : typeof obj === "undefined" ? "undefined" : _typeof(obj);
+	exports.default = typeof _symbol2.default === "function" && _typeof(_iterator2.default) === "symbol" ? function (obj) {
+	  return typeof obj === "undefined" ? "undefined" : _typeof(obj);
+	} : function (obj) {
+	  return obj && typeof _symbol2.default === "function" && obj.constructor === _symbol2.default ? "symbol" : typeof obj === "undefined" ? "undefined" : _typeof(obj);
 	};
 
 /***/ },
@@ -21656,33 +21715,390 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	__webpack_require__(202);
-	__webpack_require__(222);
-	module.exports = __webpack_require__(189).Symbol;
+	__webpack_require__(218);
+	module.exports = __webpack_require__(215)('iterator');
 
 /***/ },
 /* 202 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
+	var $at  = __webpack_require__(203)(true);
+
+	// 21.1.3.27 String.prototype[@@iterator]()
+	__webpack_require__(205)(String, 'String', function(iterated){
+	  this._t = String(iterated); // target
+	  this._i = 0;                // next index
+	// 21.1.5.2.1 %StringIteratorPrototype%.next()
+	}, function(){
+	  var O     = this._t
+	    , index = this._i
+	    , point;
+	  if(index >= O.length)return {value: undefined, done: true};
+	  point = $at(O, index);
+	  this._i += point.length;
+	  return {value: point, done: false};
+	});
+
+/***/ },
+/* 203 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var toInteger = __webpack_require__(204)
+	  , defined   = __webpack_require__(185);
+	// true  -> String#at
+	// false -> String#codePointAt
+	module.exports = function(TO_STRING){
+	  return function(that, pos){
+	    var s = String(defined(that))
+	      , i = toInteger(pos)
+	      , l = s.length
+	      , a, b;
+	    if(i < 0 || i >= l)return TO_STRING ? '' : undefined;
+	    a = s.charCodeAt(i);
+	    return a < 0xd800 || a > 0xdbff || i + 1 === l || (b = s.charCodeAt(i + 1)) < 0xdc00 || b > 0xdfff
+	      ? TO_STRING ? s.charAt(i) : a
+	      : TO_STRING ? s.slice(i, i + 2) : (a - 0xd800 << 10) + (b - 0xdc00) + 0x10000;
+	  };
+	};
+
+/***/ },
+/* 204 */
+/***/ function(module, exports) {
+
+	// 7.1.4 ToInteger
+	var ceil  = Math.ceil
+	  , floor = Math.floor;
+	module.exports = function(it){
+	  return isNaN(it = +it) ? 0 : (it > 0 ? floor : ceil)(it);
+	};
+
+/***/ },
+/* 205 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	var LIBRARY        = __webpack_require__(206)
+	  , $export        = __webpack_require__(187)
+	  , redefine       = __webpack_require__(207)
+	  , hide           = __webpack_require__(208)
+	  , has            = __webpack_require__(211)
+	  , Iterators      = __webpack_require__(212)
+	  , $iterCreate    = __webpack_require__(213)
+	  , setToStringTag = __webpack_require__(214)
+	  , getProto       = __webpack_require__(197).getProto
+	  , ITERATOR       = __webpack_require__(215)('iterator')
+	  , BUGGY          = !([].keys && 'next' in [].keys()) // Safari has buggy iterators w/o `next`
+	  , FF_ITERATOR    = '@@iterator'
+	  , KEYS           = 'keys'
+	  , VALUES         = 'values';
+
+	var returnThis = function(){ return this; };
+
+	module.exports = function(Base, NAME, Constructor, next, DEFAULT, IS_SET, FORCED){
+	  $iterCreate(Constructor, NAME, next);
+	  var getMethod = function(kind){
+	    if(!BUGGY && kind in proto)return proto[kind];
+	    switch(kind){
+	      case KEYS: return function keys(){ return new Constructor(this, kind); };
+	      case VALUES: return function values(){ return new Constructor(this, kind); };
+	    } return function entries(){ return new Constructor(this, kind); };
+	  };
+	  var TAG        = NAME + ' Iterator'
+	    , DEF_VALUES = DEFAULT == VALUES
+	    , VALUES_BUG = false
+	    , proto      = Base.prototype
+	    , $native    = proto[ITERATOR] || proto[FF_ITERATOR] || DEFAULT && proto[DEFAULT]
+	    , $default   = $native || getMethod(DEFAULT)
+	    , methods, key;
+	  // Fix native
+	  if($native){
+	    var IteratorPrototype = getProto($default.call(new Base));
+	    // Set @@toStringTag to native iterators
+	    setToStringTag(IteratorPrototype, TAG, true);
+	    // FF fix
+	    if(!LIBRARY && has(proto, FF_ITERATOR))hide(IteratorPrototype, ITERATOR, returnThis);
+	    // fix Array#{values, @@iterator}.name in V8 / FF
+	    if(DEF_VALUES && $native.name !== VALUES){
+	      VALUES_BUG = true;
+	      $default = function values(){ return $native.call(this); };
+	    }
+	  }
+	  // Define iterator
+	  if((!LIBRARY || FORCED) && (BUGGY || VALUES_BUG || !proto[ITERATOR])){
+	    hide(proto, ITERATOR, $default);
+	  }
+	  // Plug for library
+	  Iterators[NAME] = $default;
+	  Iterators[TAG]  = returnThis;
+	  if(DEFAULT){
+	    methods = {
+	      values:  DEF_VALUES  ? $default : getMethod(VALUES),
+	      keys:    IS_SET      ? $default : getMethod(KEYS),
+	      entries: !DEF_VALUES ? $default : getMethod('entries')
+	    };
+	    if(FORCED)for(key in methods){
+	      if(!(key in proto))redefine(proto, key, methods[key]);
+	    } else $export($export.P + $export.F * (BUGGY || VALUES_BUG), NAME, methods);
+	  }
+	  return methods;
+	};
+
+/***/ },
+/* 206 */
+/***/ function(module, exports) {
+
+	module.exports = true;
+
+/***/ },
+/* 207 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(208);
+
+/***/ },
+/* 208 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var $          = __webpack_require__(197)
+	  , createDesc = __webpack_require__(209);
+	module.exports = __webpack_require__(210) ? function(object, key, value){
+	  return $.setDesc(object, key, createDesc(1, value));
+	} : function(object, key, value){
+	  object[key] = value;
+	  return object;
+	};
+
+/***/ },
+/* 209 */
+/***/ function(module, exports) {
+
+	module.exports = function(bitmap, value){
+	  return {
+	    enumerable  : !(bitmap & 1),
+	    configurable: !(bitmap & 2),
+	    writable    : !(bitmap & 4),
+	    value       : value
+	  };
+	};
+
+/***/ },
+/* 210 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Thank's IE8 for his funny defineProperty
+	module.exports = !__webpack_require__(192)(function(){
+	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
+	});
+
+/***/ },
+/* 211 */
+/***/ function(module, exports) {
+
+	var hasOwnProperty = {}.hasOwnProperty;
+	module.exports = function(it, key){
+	  return hasOwnProperty.call(it, key);
+	};
+
+/***/ },
+/* 212 */
+/***/ function(module, exports) {
+
+	module.exports = {};
+
+/***/ },
+/* 213 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	var $              = __webpack_require__(197)
+	  , descriptor     = __webpack_require__(209)
+	  , setToStringTag = __webpack_require__(214)
+	  , IteratorPrototype = {};
+
+	// 25.1.2.1.1 %IteratorPrototype%[@@iterator]()
+	__webpack_require__(208)(IteratorPrototype, __webpack_require__(215)('iterator'), function(){ return this; });
+
+	module.exports = function(Constructor, NAME, next){
+	  Constructor.prototype = $.create(IteratorPrototype, {next: descriptor(1, next)});
+	  setToStringTag(Constructor, NAME + ' Iterator');
+	};
+
+/***/ },
+/* 214 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var def = __webpack_require__(197).setDesc
+	  , has = __webpack_require__(211)
+	  , TAG = __webpack_require__(215)('toStringTag');
+
+	module.exports = function(it, tag, stat){
+	  if(it && !has(it = stat ? it : it.prototype, TAG))def(it, TAG, {configurable: true, value: tag});
+	};
+
+/***/ },
+/* 215 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var store  = __webpack_require__(216)('wks')
+	  , uid    = __webpack_require__(217)
+	  , Symbol = __webpack_require__(188).Symbol;
+	module.exports = function(name){
+	  return store[name] || (store[name] =
+	    Symbol && Symbol[name] || (Symbol || uid)('Symbol.' + name));
+	};
+
+/***/ },
+/* 216 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var global = __webpack_require__(188)
+	  , SHARED = '__core-js_shared__'
+	  , store  = global[SHARED] || (global[SHARED] = {});
+	module.exports = function(key){
+	  return store[key] || (store[key] = {});
+	};
+
+/***/ },
+/* 217 */
+/***/ function(module, exports) {
+
+	var id = 0
+	  , px = Math.random();
+	module.exports = function(key){
+	  return 'Symbol('.concat(key === undefined ? '' : key, ')_', (++id + px).toString(36));
+	};
+
+/***/ },
+/* 218 */
+/***/ function(module, exports, __webpack_require__) {
+
+	__webpack_require__(219);
+	var Iterators = __webpack_require__(212);
+	Iterators.NodeList = Iterators.HTMLCollection = Iterators.Array;
+
+/***/ },
+/* 219 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	var addToUnscopables = __webpack_require__(220)
+	  , step             = __webpack_require__(221)
+	  , Iterators        = __webpack_require__(212)
+	  , toIObject        = __webpack_require__(222);
+
+	// 22.1.3.4 Array.prototype.entries()
+	// 22.1.3.13 Array.prototype.keys()
+	// 22.1.3.29 Array.prototype.values()
+	// 22.1.3.30 Array.prototype[@@iterator]()
+	module.exports = __webpack_require__(205)(Array, 'Array', function(iterated, kind){
+	  this._t = toIObject(iterated); // target
+	  this._i = 0;                   // next index
+	  this._k = kind;                // kind
+	// 22.1.5.2.1 %ArrayIteratorPrototype%.next()
+	}, function(){
+	  var O     = this._t
+	    , kind  = this._k
+	    , index = this._i++;
+	  if(!O || index >= O.length){
+	    this._t = undefined;
+	    return step(1);
+	  }
+	  if(kind == 'keys'  )return step(0, index);
+	  if(kind == 'values')return step(0, O[index]);
+	  return step(0, [index, O[index]]);
+	}, 'values');
+
+	// argumentsList[@@iterator] is %ArrayProto_values% (9.4.4.6, 9.4.4.7)
+	Iterators.Arguments = Iterators.Array;
+
+	addToUnscopables('keys');
+	addToUnscopables('values');
+	addToUnscopables('entries');
+
+/***/ },
+/* 220 */
+/***/ function(module, exports) {
+
+	module.exports = function(){ /* empty */ };
+
+/***/ },
+/* 221 */
+/***/ function(module, exports) {
+
+	module.exports = function(done, value){
+	  return {value: value, done: !!done};
+	};
+
+/***/ },
+/* 222 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// to indexed object, toObject with fallback for non-array-like ES3 strings
+	var IObject = __webpack_require__(223)
+	  , defined = __webpack_require__(185);
+	module.exports = function(it){
+	  return IObject(defined(it));
+	};
+
+/***/ },
+/* 223 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// fallback for non-array-like ES3 and non-enumerable old V8 strings
+	var cof = __webpack_require__(224);
+	module.exports = Object('z').propertyIsEnumerable(0) ? Object : function(it){
+	  return cof(it) == 'String' ? it.split('') : Object(it);
+	};
+
+/***/ },
+/* 224 */
+/***/ function(module, exports) {
+
+	var toString = {}.toString;
+
+	module.exports = function(it){
+	  return toString.call(it).slice(8, -1);
+	};
+
+/***/ },
+/* 225 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = { "default": __webpack_require__(226), __esModule: true };
+
+/***/ },
+/* 226 */
+/***/ function(module, exports, __webpack_require__) {
+
+	__webpack_require__(227);
+	__webpack_require__(234);
+	module.exports = __webpack_require__(189).Symbol;
+
+/***/ },
+/* 227 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
 	// ECMAScript 6 symbols shim
 	var $              = __webpack_require__(197)
 	  , global         = __webpack_require__(188)
-	  , has            = __webpack_require__(203)
-	  , DESCRIPTORS    = __webpack_require__(204)
+	  , has            = __webpack_require__(211)
+	  , DESCRIPTORS    = __webpack_require__(210)
 	  , $export        = __webpack_require__(187)
-	  , redefine       = __webpack_require__(205)
+	  , redefine       = __webpack_require__(207)
 	  , $fails         = __webpack_require__(192)
-	  , shared         = __webpack_require__(208)
-	  , setToStringTag = __webpack_require__(209)
-	  , uid            = __webpack_require__(211)
-	  , wks            = __webpack_require__(210)
-	  , keyOf          = __webpack_require__(212)
-	  , $names         = __webpack_require__(216)
-	  , enumKeys       = __webpack_require__(217)
-	  , isArray        = __webpack_require__(218)
-	  , anObject       = __webpack_require__(219)
-	  , toIObject      = __webpack_require__(213)
-	  , createDesc     = __webpack_require__(207)
+	  , shared         = __webpack_require__(216)
+	  , setToStringTag = __webpack_require__(214)
+	  , uid            = __webpack_require__(217)
+	  , wks            = __webpack_require__(215)
+	  , keyOf          = __webpack_require__(228)
+	  , $names         = __webpack_require__(229)
+	  , enumKeys       = __webpack_require__(230)
+	  , isArray        = __webpack_require__(231)
+	  , anObject       = __webpack_require__(232)
+	  , toIObject      = __webpack_require__(222)
+	  , createDesc     = __webpack_require__(209)
 	  , getDesc        = $.getDesc
 	  , setDesc        = $.setDesc
 	  , _create        = $.create
@@ -21822,7 +22238,7 @@
 	  $.getNames   = $names.get = $getOwnPropertyNames;
 	  $.getSymbols = $getOwnPropertySymbols;
 
-	  if(DESCRIPTORS && !__webpack_require__(221)){
+	  if(DESCRIPTORS && !__webpack_require__(206)){
 	    redefine(ObjectProto, 'propertyIsEnumerable', $propertyIsEnumerable, true);
 	  }
 	}
@@ -21892,106 +22308,11 @@
 	setToStringTag(global.JSON, 'JSON', true);
 
 /***/ },
-/* 203 */
-/***/ function(module, exports) {
-
-	var hasOwnProperty = {}.hasOwnProperty;
-	module.exports = function(it, key){
-	  return hasOwnProperty.call(it, key);
-	};
-
-/***/ },
-/* 204 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// Thank's IE8 for his funny defineProperty
-	module.exports = !__webpack_require__(192)(function(){
-	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
-	});
-
-/***/ },
-/* 205 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(206);
-
-/***/ },
-/* 206 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var $          = __webpack_require__(197)
-	  , createDesc = __webpack_require__(207);
-	module.exports = __webpack_require__(204) ? function(object, key, value){
-	  return $.setDesc(object, key, createDesc(1, value));
-	} : function(object, key, value){
-	  object[key] = value;
-	  return object;
-	};
-
-/***/ },
-/* 207 */
-/***/ function(module, exports) {
-
-	module.exports = function(bitmap, value){
-	  return {
-	    enumerable  : !(bitmap & 1),
-	    configurable: !(bitmap & 2),
-	    writable    : !(bitmap & 4),
-	    value       : value
-	  };
-	};
-
-/***/ },
-/* 208 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var global = __webpack_require__(188)
-	  , SHARED = '__core-js_shared__'
-	  , store  = global[SHARED] || (global[SHARED] = {});
-	module.exports = function(key){
-	  return store[key] || (store[key] = {});
-	};
-
-/***/ },
-/* 209 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var def = __webpack_require__(197).setDesc
-	  , has = __webpack_require__(203)
-	  , TAG = __webpack_require__(210)('toStringTag');
-
-	module.exports = function(it, tag, stat){
-	  if(it && !has(it = stat ? it : it.prototype, TAG))def(it, TAG, {configurable: true, value: tag});
-	};
-
-/***/ },
-/* 210 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var store  = __webpack_require__(208)('wks')
-	  , uid    = __webpack_require__(211)
-	  , Symbol = __webpack_require__(188).Symbol;
-	module.exports = function(name){
-	  return store[name] || (store[name] =
-	    Symbol && Symbol[name] || (Symbol || uid)('Symbol.' + name));
-	};
-
-/***/ },
-/* 211 */
-/***/ function(module, exports) {
-
-	var id = 0
-	  , px = Math.random();
-	module.exports = function(key){
-	  return 'Symbol('.concat(key === undefined ? '' : key, ')_', (++id + px).toString(36));
-	};
-
-/***/ },
-/* 212 */
+/* 228 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var $         = __webpack_require__(197)
-	  , toIObject = __webpack_require__(213);
+	  , toIObject = __webpack_require__(222);
 	module.exports = function(object, el){
 	  var O      = toIObject(object)
 	    , keys   = $.getKeys(O)
@@ -22002,42 +22323,11 @@
 	};
 
 /***/ },
-/* 213 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// to indexed object, toObject with fallback for non-array-like ES3 strings
-	var IObject = __webpack_require__(214)
-	  , defined = __webpack_require__(185);
-	module.exports = function(it){
-	  return IObject(defined(it));
-	};
-
-/***/ },
-/* 214 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// fallback for non-array-like ES3 and non-enumerable old V8 strings
-	var cof = __webpack_require__(215);
-	module.exports = Object('z').propertyIsEnumerable(0) ? Object : function(it){
-	  return cof(it) == 'String' ? it.split('') : Object(it);
-	};
-
-/***/ },
-/* 215 */
-/***/ function(module, exports) {
-
-	var toString = {}.toString;
-
-	module.exports = function(it){
-	  return toString.call(it).slice(8, -1);
-	};
-
-/***/ },
-/* 216 */
+/* 229 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// fallback for IE11 buggy Object.getOwnPropertyNames with iframe and window
-	var toIObject = __webpack_require__(213)
+	var toIObject = __webpack_require__(222)
 	  , getNames  = __webpack_require__(197).getNames
 	  , toString  = {}.toString;
 
@@ -22058,7 +22348,7 @@
 	};
 
 /***/ },
-/* 217 */
+/* 230 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// all enumerable object keys, includes symbols
@@ -22077,27 +22367,27 @@
 	};
 
 /***/ },
-/* 218 */
+/* 231 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.2.2 IsArray(argument)
-	var cof = __webpack_require__(215);
+	var cof = __webpack_require__(224);
 	module.exports = Array.isArray || function(arg){
 	  return cof(arg) == 'Array';
 	};
 
 /***/ },
-/* 219 */
+/* 232 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(220);
+	var isObject = __webpack_require__(233);
 	module.exports = function(it){
 	  if(!isObject(it))throw TypeError(it + ' is not an object!');
 	  return it;
 	};
 
 /***/ },
-/* 220 */
+/* 233 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -22105,30 +22395,24 @@
 	};
 
 /***/ },
-/* 221 */
-/***/ function(module, exports) {
-
-	module.exports = true;
-
-/***/ },
-/* 222 */
+/* 234 */
 /***/ function(module, exports) {
 
 	
 
 /***/ },
-/* 223 */
+/* 235 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	exports.__esModule = true;
 
-	var _setPrototypeOf = __webpack_require__(224);
+	var _setPrototypeOf = __webpack_require__(236);
 
 	var _setPrototypeOf2 = _interopRequireDefault(_setPrototypeOf);
 
-	var _create = __webpack_require__(228);
+	var _create = __webpack_require__(240);
 
 	var _create2 = _interopRequireDefault(_create);
 
@@ -22155,35 +22439,35 @@
 	};
 
 /***/ },
-/* 224 */
+/* 236 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = { "default": __webpack_require__(225), __esModule: true };
+	module.exports = { "default": __webpack_require__(237), __esModule: true };
 
 /***/ },
-/* 225 */
+/* 237 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(226);
+	__webpack_require__(238);
 	module.exports = __webpack_require__(189).Object.setPrototypeOf;
 
 /***/ },
-/* 226 */
+/* 238 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.3.19 Object.setPrototypeOf(O, proto)
 	var $export = __webpack_require__(187);
-	$export($export.S, 'Object', {setPrototypeOf: __webpack_require__(227).set});
+	$export($export.S, 'Object', {setPrototypeOf: __webpack_require__(239).set});
 
 /***/ },
-/* 227 */
+/* 239 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Works with __proto__ only. Old v8 can't work with null proto objects.
 	/* eslint-disable no-proto */
 	var getDesc  = __webpack_require__(197).getDesc
-	  , isObject = __webpack_require__(220)
-	  , anObject = __webpack_require__(219);
+	  , isObject = __webpack_require__(233)
+	  , anObject = __webpack_require__(232);
 	var check = function(O, proto){
 	  anObject(O);
 	  if(!isObject(proto) && proto !== null)throw TypeError(proto + ": can't set as prototype!");
@@ -22207,13 +22491,13 @@
 	};
 
 /***/ },
-/* 228 */
+/* 240 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = { "default": __webpack_require__(229), __esModule: true };
+	module.exports = { "default": __webpack_require__(241), __esModule: true };
 
 /***/ },
-/* 229 */
+/* 241 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var $ = __webpack_require__(197);
@@ -22222,413 +22506,90 @@
 	};
 
 /***/ },
-/* 230 */
+/* 242 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-
-	var _getPrototypeOf = __webpack_require__(181);
-
-	var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
-
-	var _classCallCheck2 = __webpack_require__(193);
-
-	var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
-
-	var _createClass2 = __webpack_require__(194);
-
-	var _createClass3 = _interopRequireDefault(_createClass2);
-
-	var _possibleConstructorReturn2 = __webpack_require__(198);
-
-	var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
-
-	var _inherits2 = __webpack_require__(223);
-
-	var _inherits3 = _interopRequireDefault(_inherits2);
 
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+	exports.fetchData = undefined;
 
-	var _react = __webpack_require__(4);
+	var _Constants = __webpack_require__(243);
 
-	var _react2 = _interopRequireDefault(_react);
+	function requestData(comp) {
+	    return {
+	        type: _Constants.ACTIONS.REQUESTDATA,
+	        comp: comp
+	    };
+	}
 
-	var _reactDom = __webpack_require__(179);
+	function receiveData(comp, data) {
+	    return {
+	        type: _Constants.ACTIONS.RECEIVEDATA,
+	        comp: comp,
+	        data: data.tree,
+	        meta: data.meta
+	    };
+	}
 
-	var _reactDom2 = _interopRequireDefault(_reactDom);
+	function fetchData(url) {
+	    var comp = arguments.length <= 1 || arguments[1] === undefined ? 'grid' : arguments[1];
 
-	var _cell = __webpack_require__(231);
+	    return function (dispatch) {
+	        dispatch(requestData(comp));
 
-	var _cell2 = _interopRequireDefault(_cell);
+	        return fetch(url).then(function (response) {
+	            return response.json();
+	        }).then(function (json) {
+	            return dispatch(receiveData(comp, json));
+	        });
+	    };
+	}
 
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var Row = function (_React$Component) {
-	    (0, _inherits3.default)(Row, _React$Component);
-
-	    function Row(props) {
-	        (0, _classCallCheck3.default)(this, Row);
-	        return (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(Row).call(this, props));
-	    }
-
-	    (0, _createClass3.default)(Row, [{
-	        key: 'render',
-	        value: function render() {
-	            var cells = this.props.cells,
-	                actions = this.props.actions,
-	                cellsList = [],
-	                i,
-	                ckey,
-	                val,
-	                style;
-
-	            for (i = 0; i < cells.length; i = i + 1) {
-
-	                cellsList.push(_react2.default.createElement(_cell2.default, {
-	                    key: cells[i].key,
-	                    cellkey: cells[i].key,
-	                    value: cells[i].data,
-	                    style: cells[i].style,
-	                    actions: actions
-	                }));
-	            }
-
-	            return _react2.default.createElement(
-	                'tr',
-	                null,
-	                cellsList
-	            );
-	        }
-	    }]);
-	    return Row;
-	}(_react2.default.Component);
-
-	exports.default = Row;
-	module.exports = exports['default'];
+	exports.fetchData = fetchData;
 
 /***/ },
-/* 231 */
+/* 243 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
-
-	var _assign = __webpack_require__(232);
-
-	var _assign2 = _interopRequireDefault(_assign);
-
-	var _getPrototypeOf = __webpack_require__(181);
-
-	var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
-
-	var _classCallCheck2 = __webpack_require__(193);
-
-	var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
-
-	var _createClass2 = __webpack_require__(194);
-
-	var _createClass3 = _interopRequireDefault(_createClass2);
-
-	var _possibleConstructorReturn2 = __webpack_require__(198);
-
-	var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
-
-	var _inherits2 = __webpack_require__(223);
-
-	var _inherits3 = _interopRequireDefault(_inherits2);
+	"use strict";
 
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+	exports.COLMAP = exports.ACTIONS = undefined;
 
-	var _react = __webpack_require__(4);
-
-	var _react2 = _interopRequireDefault(_react);
-
-	var _reactDom = __webpack_require__(179);
-
-	var _reactDom2 = _interopRequireDefault(_reactDom);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var CellComponent = function (_React$Component) {
-	    (0, _inherits3.default)(CellComponent, _React$Component);
-
-	    /*
-	     */
-
-	    function CellComponent(props) {
-	        (0, _classCallCheck3.default)(this, CellComponent);
-
-	        // React components using ES6 classes no longer autobind this to non React methods
-	        // need to manually bind them in constructor
-
-	        var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(CellComponent).call(this, props));
-
-	        _this.onKeyDown = _this.onKeyDown.bind(_this);
-	        _this.handleClick = _this.handleClick.bind(_this);
-	        _this.handleChange = _this.handleChange.bind(_this);
-	        _this.handleFocus = _this.handleFocus.bind(_this);
-	        _this.handleBlur = _this.handleBlur.bind(_this);
-	        return _this;
-	    }
-
-	    (0, _createClass3.default)(CellComponent, [{
-	        key: 'componentWillMount',
-	        value: function componentWillMount() {
-	            this.setState({
-	                data: this.props.value,
-	                style: this.props.style
-	            });
-	        }
-
-	        //shouldComponentUpdate () {
-
-	        //}
-
-	    }, {
-	        key: 'componentWillReceiveProps',
-	        value: function componentWillReceiveProps() {
-	            // do this only for total cells
-	            if (this.props.cellkey.indexOf("total_") > 0) {
-
-	                this.setState({
-	                    data: this.props.value,
-	                    style: this.props.style
-	                });
-	            }
-	        }
-	    }, {
-	        key: 'handleFocus',
-	        value: function handleFocus(e) {
-	            var newStyle = (0, _assign2.default)({}, this.state.style);
-	            newStyle['borderColor'] = 'blue';
-	            this.setState({ data: e.target.value, style: newStyle });
-	        }
-	    }, {
-	        key: 'handleBlur',
-	        value: function handleBlur(e) {
-	            var newStyle = (0, _assign2.default)({}, this.state.style);
-	            var key = this.props.cellkey;
-	            var data = e.target.value === '' ? '' : parseFloat(e.target.value);
-	            newStyle['borderColor'] = 'white';
-	            this.setState({ data: data, style: newStyle });
-	            this.props.actions(key, e.target.value);
-	        }
-	        /*
-	         * Click handler for individual cell, ensuring navigation and selection
-	         * @param  {event} e
-	         */
-
-	    }, {
-	        key: 'handleClick',
-	        value: function handleClick(e) {}
-	    }, {
-	        key: 'handleChange',
-	        value: function handleChange(e) {
-	            var newStyle = (0, _assign2.default)({}, this.state.style);
-	            newStyle['backgroundColor'] = 'grey';
-	            this.setState({ data: e.target.value, style: newStyle });
-	        }
-
-	        /*
-	         */
-
-	    }, {
-	        key: 'onKeyDown',
-	        value: function onKeyDown(e) {
-	            switch (e.keyCode) {
-	                case 13: // Enter
-	                case 9:
-	                    // Tab
-	                    break;
-	            }
-	        }
-
-	        /*
-	         * React "render" method, rendering the individual cell
-	         */
-
-	    }, {
-	        key: 'render',
-	        value: function render() {
-	            var props = this.props,
-	                style = this.state.style,
-	                key = props.key,
-	                cellContent,
-	                cellDiv,
-	                cellNode;
-
-	            if (style && style.editable) {
-	                cellDiv = _react2.default.createElement(
-	                    'div',
-	                    null,
-	                    _react2.default.createElement('input', { type: 'text', value: this.state.data, style: style,
-	                        onKeyDown: this.onKeyDown,
-	                        onClick: this.handleClick,
-	                        onChange: this.handleChange,
-	                        onFocus: this.handleFocus,
-	                        onBlur: this.handleBlur })
-	                );
-	            } else if (style) {
-	                cellDiv = _react2.default.createElement(
-	                    'div',
-	                    { style: style },
-	                    this.state.data
-	                );
-	            } else {
-	                cellDiv = _react2.default.createElement(
-	                    'div',
-	                    null,
-	                    this.state.data
-	                );
-	            }
-
-	            if (style.header) {
-
-	                if (style.colspan) {
-	                    cellNode = _react2.default.createElement(
-	                        'th',
-	                        { colSpan: style.colspan },
-	                        cellDiv
-	                    );
-	                } else {
-	                    cellNode = _react2.default.createElement(
-	                        'th',
-	                        null,
-	                        cellDiv
-	                    );
-	                }
-	            } else {
-	                cellNode = _react2.default.createElement(
-	                    'td',
-	                    null,
-	                    cellDiv
-	                );
-	            }
-
-	            return cellNode;
-	        }
-	    }]);
-	    return CellComponent;
-	}(_react2.default.Component);
-
-	exports.default = CellComponent;
-	module.exports = exports['default'];
-
-/***/ },
-/* 232 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = { "default": __webpack_require__(233), __esModule: true };
-
-/***/ },
-/* 233 */
-/***/ function(module, exports, __webpack_require__) {
-
-	__webpack_require__(234);
-	module.exports = __webpack_require__(189).Object.assign;
-
-/***/ },
-/* 234 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// 19.1.3.1 Object.assign(target, source)
-	var $export = __webpack_require__(187);
-
-	$export($export.S + $export.F, 'Object', {assign: __webpack_require__(235)});
-
-/***/ },
-/* 235 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// 19.1.2.1 Object.assign(target, source, ...)
-	var $        = __webpack_require__(197)
-	  , toObject = __webpack_require__(184)
-	  , IObject  = __webpack_require__(214);
-
-	// should work with symbols and should have deterministic property order (V8 bug)
-	module.exports = __webpack_require__(192)(function(){
-	  var a = Object.assign
-	    , A = {}
-	    , B = {}
-	    , S = Symbol()
-	    , K = 'abcdefghijklmnopqrst';
-	  A[S] = 7;
-	  K.split('').forEach(function(k){ B[k] = k; });
-	  return a({}, A)[S] != 7 || Object.keys(a({}, B)).join('') != K;
-	}) ? function assign(target, source){ // eslint-disable-line no-unused-vars
-	  var T     = toObject(target)
-	    , $$    = arguments
-	    , $$len = $$.length
-	    , index = 1
-	    , getKeys    = $.getKeys
-	    , getSymbols = $.getSymbols
-	    , isEnum     = $.isEnum;
-	  while($$len > index){
-	    var S      = IObject($$[index++])
-	      , keys   = getSymbols ? getKeys(S).concat(getSymbols(S)) : getKeys(S)
-	      , length = keys.length
-	      , j      = 0
-	      , key;
-	    while(length > j)if(isEnum.call(S, key = keys[j++]))T[key] = S[key];
-	  }
-	  return T;
-	} : Object.assign;
-
-/***/ },
-/* 236 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _keymirror = __webpack_require__(237);
+	var _keymirror = __webpack_require__(244);
 
 	var _keymirror2 = _interopRequireDefault(_keymirror);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var CONSTS = {
-
-	  ACTIONS: (0, _keymirror2.default)({
+	var ACTIONS = (0, _keymirror2.default)({
 	    PAGINATE: null,
 	    EDITCELL: null,
 	    REFRESH: null,
 	    REQUESTDATA: null,
-	    RECEIVEDATA: null
+	    RECEIVEDATA: null,
+	    BUILDVTREE: null
 
-	  }),
+	});
 
-	  DEFAULT: {
-	    HIERARCHY: [],
-	    DISPLAY: 'percentage',
-	    URL: '/api/port_data'
-	  },
-
-	  INDEXMAP: {
-	    sec_name: 3,
-	    asset_class: 4,
-	    region: 5,
-	    sec_class: 7,
-	    cur: 8,
-	    trg: 9,
-	    bmk: 10,
-	    currency: 11,
-	    cashflow: 12
-	  }
+	var COLMAP = {
+	    cur: "weight_current",
+	    trg: "weight_target",
+	    bmk: "weight_benchmark",
+	    edit: ['trg']
 
 	};
 
-	exports.default = CONSTS;
-	module.exports = exports['default'];
+	exports.ACTIONS = ACTIONS;
+	exports.COLMAP = COLMAP;
 
 /***/ },
-/* 237 */
+/* 244 */
 /***/ function(module, exports) {
 
 	/**
@@ -22687,7 +22648,7 @@
 
 
 /***/ },
-/* 238 */
+/* 245 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -22695,465 +22656,169 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.fetchData = exports.editCell = exports.filterBy = exports.paginate = undefined;
+	exports.editCell = exports.buildVTree = undefined;
 
-	var _constants = __webpack_require__(236);
+	var _Constants = __webpack_require__(243);
 
-	var _constants2 = _interopRequireDefault(_constants);
+	var _ViewUtil = __webpack_require__(246);
 
-	var _util = __webpack_require__(239);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function paginate(id, direction) {
-
-	    return {
-	        type: _constants2.default.ACTIONS.PAGINATE,
-	        comp: 'grid',
-	        id: id,
-	        data: {
-	            direction: direction
-	        }
-	    };
-	}
-
-	function filterBy(id, filter) {
-
-	    return {
-	        type: _constants2.default.ACTIONS.FILTER,
-	        comp: 'grid',
-	        id: id,
-	        data: {
-	            filter: filter
-	        }
-	    };
-	}
-
-	function editCell(id, data) {
-	    return {
-	        type: _constants2.default.ACTIONS.EDITCELL,
-	        comp: 'grid',
-	        id: id,
-	        data: data
-	    };
-	}
-
-	function requestData(comp) {
-	    return {
-	        type: _constants2.default.ACTIONS.REQUESTDATA,
-	        comp: comp
-	    };
-	}
-
-	function receiveData(comp, data) {
-	    return {
-	        type: _constants2.default.ACTIONS.RECEIVEDATA,
-	        comp: comp,
-	        data: (0, _util.arrayToTree)(data.tree),
-	        meta: data.meta,
-	        portlist: (0, _util.preprocessPortList)(data.meta.portListMap),
-	        hierarchy: ['asset_class', 'region'],
-	        header: [{ col: 'cur', name: 'Cur', style: { editable: false } }, { col: 'trg', name: 'Trg', style: { editable: true } }, { col: 'bmk', name: 'Bmk', style: { editable: false } }]
-	    };
-	}
-
-	// thunk action creator for async data
-
-	function shouldFetchData(_ref) {
-	    var grid = _ref.grid;
-
-	    return !grid.data || !grid.isFetching;
-	}
-
-	function fetchData(url) {
-	    var grid = arguments.length <= 1 || arguments[1] === undefined ? 'grid' : arguments[1];
-
-	    return function (dispatch) {
-	        dispatch(requestData(grid));
-
-	        return fetch(url).then(function (response) {
-	            return response.json();
-	        }).then(function (json) {
-	            return dispatch(receiveData(grid, json));
-	        });
-	    };
-	}
-
-	exports.paginate = paginate;
-	exports.filterBy = filterBy;
-	exports.editCell = editCell;
-	exports.fetchData = fetchData;
-
-/***/ },
-/* 239 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _assign = __webpack_require__(232);
-
-	var _assign2 = _interopRequireDefault(_assign);
-
-	var _keys = __webpack_require__(240);
-
-	var _keys2 = _interopRequireDefault(_keys);
-
-	var _typeof2 = __webpack_require__(199);
-
-	var _typeof3 = _interopRequireDefault(_typeof2);
-
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
-	exports.arrayToTree = exports.mergeChangeList = exports.preprocessData = exports.preprocessPortList = undefined;
-
-	var _constants = __webpack_require__(236);
-
-	var _constants2 = _interopRequireDefault(_constants);
-
-	var _lodash = __webpack_require__(243);
+	var _lodash = __webpack_require__(247);
 
 	var _lodash2 = _interopRequireDefault(_lodash);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	// header columns to display
-	function preprocessPortList(portListMap) {
-	    var portList = [];
-	    for (var port in portListMap) {
-	        portList.push({ port_id: port, name: portListMap[port].name, nav: portListMap[port].nav });
-	    }
-	    return portList;
+	function buildVTree(data, portlist, hier, cols) {
+	    var fdata = data.filter(function (item) {
+	        return _lodash2.default.includes(portlist, item['port_id']);
+	    });
+
+	    return {
+	        type: _Constants.ACTIONS.BUILDVTREE,
+	        portlist: portlist,
+	        hier: hier,
+	        vtree: (0, _ViewUtil.createTree)(fdata, hier, cols)
+
+	    };
 	}
 
-	// given two json style objects, merge into one
-	function styleMerge(st1, st2) {
-	    var newStyle = {},
+	function editCell(pos, ndata, odata) {
+	    return {
+	        type: _Constants.ACTIONS.EDITCELL,
+	        comp: 'grid',
+	        pos: pos,
+	        data: ndata,
+	        odata: odata
+	    };
+	}
+
+	exports.buildVTree = buildVTree;
+	exports.editCell = editCell;
+
+/***/ },
+/* 246 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.createTree = undefined;
+
+	var _Constants = __webpack_require__(243);
+
+	var _lodash = __webpack_require__(247);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	// input: list of portdata obj
+	// output: Vtree
+	function createTree(data, hier, cols) {
+	    var label = arguments.length <= 3 || arguments[3] === undefined ? 'Grand' : arguments[3];
+	    var accum = arguments.length <= 4 || arguments[4] === undefined ? '' : arguments[4];
+
+	    var total = calcTotal(data, cols);
+
+	    if (hier.length == 0) {
+	        return {
+	            label: label,
+	            total: total,
+	            uid: accum,
+	            children: mergeDataRow(data, cols)
+	        };
+	    } else if (label == 'Grand') {
+	        return {
+	            label: "",
+	            total: total,
+	            uid: "grand",
+	            children: applyHierarchy(_lodash2.default.groupBy(data, function (item) {
+	                return item[hier[0]];
+	            }), hier.slice(1), cols, accum)
+	        };
+	    } else {
+	        return {
+	            label: label,
+	            total: total,
+	            uid: accum,
+	            children: applyHierarchy(_lodash2.default.groupBy(data, function (item) {
+	                return item[hier[0]];
+	            }), hier.slice(1), cols, accum)
+	        };
+	    }
+	}
+
+	// takes grouped data obj => returns a list of vtree
+	function applyHierarchy(data, hier, cols, accum) {
+	    var vTreeList = [],
 	        prop;
-	    for (prop in st1) {
-	        newStyle[prop] = st1[prop];
+	    for (prop in data) {
+	        vTreeList.push(createTree(data[prop], hier, cols, prop, accum + '_' + prop));
 	    }
-	    for (prop in st2) {
-	        if (prop in newStyle && prop === 'editable') {
-	            newStyle[prop] = newStyle[prop] && st2[prop];
-	        } else {
-	            newStyle[prop] = st2[prop];
-	        }
-	    }
-	    return newStyle;
+	    return vTreeList;
 	}
 
-	// merge changelist values to the data
-	function applyChangelist(data, changelist) {
-	    var key, arrkey, col, port_id, sec_id, i, j;
-	    for (i = 0; i < changelist.length; i = i + 1) {
-	        key = changelist[i].key;
-	        arrkey = key.split("_");
-	        col = arrkey[0];
-	        port_id = arrkey[1];
-	        sec_id = arrkey[2];
-
-	        for (j = 0; j < data.length; j = j + 1) {
-	            if (data[j][0] == port_id && data[j][1] == sec_id) {
-	                data[j][_constants2.default.INDEXMAP[col]] = parseInt(changelist[i].data);
-	            }
-	        }
-	    }
-
-	    return data;
-	}
-
-	// equavalent to
-	// select {col} from data where port_id = port_id and {some custome logic in cond}
-	function gridQuery(data, portFilter) {
-	    var cond = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-	    var result = [],
-	        port = [],
-	        i;
-	    for (i = 0; i < data.length; i = i + 1) {
-	        port = data[i]['port'].filter(function (item) {
-	            return item['port_id'] in portFilter;
-	        });
-	        if (port.length > 0) {
-	            result.push(data[i]);
-	            result[result.length - 1]['port'] = port;
-	        }
-	    }
-
-	    if (cond.changelist) {
-	        result = applyChangelist(result, cond.changelist);
-	    }
-
-	    return result;
-	}
-
-	// sub
-	function calcSubTotal(subtotal, port) {
-
-	    return colData.reduce(function (curr, acc) {
-	        return curr + acc;
-	    }, 0);
-	}
-
-	// returns a list of objects
-	function rowPopulate(data, portlist, header, rowstyle) {
-	    if (!data || !portlist || _lodash2.default.isEmpty(data)) {
-	        return [];
-	    }
-
-	    var row = [{ 'key': data['secid'], 'data': data['sec_name'],
-	        'style': { 'editable': false, 'width': '300px' } }],
-	        port_id,
-	        j,
-	        k,
-	        found;
-
-	    for (port_id in portlist) {
-	        found = false;
-	        for (j = 0; j < data['port'].length; j = j + 1) {
-	            if (data['port'][j]['port_id'] == parseInt(port_id)) {
-	                found = true;
-
-	                for (k = 0; k < header.length; k = k + 1) {
-	                    row.push({
-	                        'key': header[k].col + '_' + port_id + '_' + data['secid'].toString(),
-	                        'data': data['port'][j][header[k].col],
-	                        'style': styleMerge(rowstyle, header[k].style)
-	                    });
-	                }
-	                break;
-	            }
-	        }
-
-	        if (!found) {
-	            for (k = 0; k < header.length; k = k + 1) {
-	                row.push({
-	                    'key': header[k].col + '_' + port_id + '_' + data['secid'].toString(),
-	                    'data': '',
-	                    'style': styleMerge(rowstyle, header[k].style) });
-	            }
-	        }
-	    }
-	    return row;
-	}
-
-	var secInfo = ['sec_name', 'asset_class', 'region', 'sec_class', 'currency'];
-
-	// given a nested array, return an array of object
-	function arrayToTree(data) {
-	    var dataObj = [],
-	        secId,
+	// output: a list of cell objects
+	function mergeDataRow(data, cols) {
+	    var rows = [],
 	        i,
 	        j,
-	        idx;
-
+	        idx,
+	        obj;
 	    for (i = 0; i < data.length; i = i + 1) {
-	        secId = data[i][1];
-
-	        idx = _lodash2.default.findIndex(dataObj, function (item) {
-	            return item.secid == secId;
+	        idx = _lodash2.default.findIndex(rows, function (item) {
+	            return item['uid'] == data[i]['security_id'];
 	        });
+
+	        obj = { 'port_id': data[i]['port_id'] };
+	        for (j = 0; j < cols.length; j = j + 1) {
+	            obj[cols[j]] = data[i][_Constants.COLMAP[cols[j]]];
+	        }
 
 	        if (idx >= 0) {
-	            dataObj[idx]['port'].push({
-	                'port_id': data[i][0],
-	                'cur': data[i][_constants2.default.INDEXMAP['cur']],
-	                'trg': data[i][_constants2.default.INDEXMAP['trg']],
-	                'bmk': data[i][_constants2.default.INDEXMAP['bmk']]
-	            });
+	            rows[idx]['rowdata'].push(obj);
 	        } else {
-	            dataObj.push({ 'secid': secId });
-	            for (j = 0; j < secInfo.length; j = j + 1) {
-	                dataObj[dataObj.length - 1][secInfo[j]] = data[i][_constants2.default.INDEXMAP[secInfo[j]]];
-	            }
-	            dataObj[dataObj.length - 1]['port'] = [{ 'port_id': data[i][0],
-	                'cur': data[i][_constants2.default.INDEXMAP['cur']],
-	                'trg': data[i][_constants2.default.INDEXMAP['trg']],
-	                'bmk': data[i][_constants2.default.INDEXMAP['bmk']]
-	            }];
+	            rows.push({
+	                uid: data[i]['security_id'],
+	                label: data[i]['security_name'],
+	                rowdata: [obj]
+	            });
 	        }
 	    }
-	    return dataObj;
+	    return rows;
 	}
 
-	function applyHierarchyHelper(data, hierarchy) {
-	    var prop;
-	    if (!hierarchy || hierarchy.length == 0) {
-	        return data;
-	    } else {
-	        for (prop in data) {
-	            data[prop] = applyHierarchy(data[prop], hierarchy);
-	        }
-	        return data;
-	    }
-	}
-
-	function applyHierarchy(data, hierarchy) {
-
-	    if (hierarchy.length == 0 && (typeof data === 'undefined' ? 'undefined' : (0, _typeof3.default)(data)) == 'object') {
-	        return data;
-	    } else if (hierarchy.length == 0 && data instanceof Array) {
-	        return _lodash2.default.groupBy(data, function (item) {
-	            return item['sec_class'];
-	        });
-	    } else {
-	        return applyHierarchyHelper(_lodash2.default.groupBy(data, function (item) {
-	            return item[hierarchy[0]];
-	        }), hierarchy.slice(1));
-	    }
-	}
-
-	// param: data = raw data from sql
-	function preprocessData(data) {
-	    var portlist = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
-	    var config = arguments.length <= 2 || arguments[2] === undefined ? { header: [], hierarchy: [] } : arguments[2];
-	    var changelist = arguments[3];
-
-	    var processedData,
-	        header = config.header,
-	        hierachry = config.hierarchy,
+	function calcTotal(data, cols) {
+	    var totals = [],
 	        i,
-	        j;
-
-	    if (!data || !portlist || !config || !header || portlist.length == 0 || header.length == 0) {
-	        return [];
-	    }
-
-	    var portFilter = portlist.reduce(function (obj, port) {
-	        obj[port.port_id] = null;
-	        return obj;
-	    }, {});
-
-	    // filtered port_data
-	    var portData = applyHierarchy(gridQuery(data, portFilter), hierachry);
-
-	    processedData = recursiveRender(portData, header, portFilter, 'header');
-
-	    return processedData;
-	}
-
-	function mergeTotalRow(data, total) {
-	    var i, idx, prop;
-
-	    if (!data || !data.port) {
-	        return total;
-	    }
-	    data = data.port;
+	        j,
+	        idx,
+	        obj;
 	    for (i = 0; i < data.length; i = i + 1) {
-	        idx = _lodash2.default.findIndex(total, function (item) {
+	        idx = _lodash2.default.findIndex(totals, function (item) {
 	            return item['port_id'] == data[i]['port_id'];
 	        });
-	        if (idx && idx >= 0) {
-	            for (prop in total[idx]) {
-	                if (prop != 'port_id') {
-	                    total[idx][prop] = total[idx][prop] + data[i][prop];
-	                }
+	        if (idx >= 0) {
+	            for (j = 0; j < cols.length; j = j + 1) {
+	                totals[idx][cols[j]] = totals[idx][cols[j]] + data[i][_Constants.COLMAP[cols[j]]];
 	            }
 	        } else {
-	            total.push(data[i]);
+	            obj = { 'port_id': data[i]['port_id'] };
+	            for (j = 0; j < cols.length; j = j + 1) {
+	                obj[cols[j]] = data[i][_Constants.COLMAP[cols[j]]];
+	            }
+	            totals.push(obj);
 	        }
 	    }
-	    return total;
-	}
-	// totalRow
-	// returns a list of objs representing the subtotal
-	function totalRow(data, total) {
-	    var prop, i;
-	    if (data && data.port) {
-	        total = mergeTotalRow(data, total);
-	    } else if (data instanceof Array && data.length > 0) {
-	        for (i = 0; i < data.length; i = i + 1) {
-	            total = mergeTotalRow(data[i], total);
-	        }
-	    } else if (data && (0, _keys2.default)(data).length > 0) {
-	        for (prop in data) {
-	            total = mergeTotalRow(totalRow(data[prop], total), total);
-	        }
-	    }
-
-	    return total;
+	    return totals;
 	}
 
-	function recursiveRenderHelper(data, header, portlist) {
-	    var retArr = [];
-	    for (var i = 0; i < data.length; i = i + 1) {
-	        retArr.push(rowPopulate(data[i], portlist, header, { editable: true }));
-	    }
-	    return retArr;
-	}
-
-	// {'key': data['secid'], 'data': data['sec_name'],
-	//               'style': {'editable': false, 'width': '300px'}}
-
-	function recursiveRender(data, header, portlist) {
-	    var rid = arguments.length <= 3 || arguments[3] === undefined ? '' : arguments[3];
-
-	    var items = [],
-	        prop;
-	    if (data instanceof Array && data.length > 0) {
-	        items = items.concat(recursiveRenderHelper(data, header, portlist));
-	    } else if (data && (0, _keys2.default)(data).length > 0) {
-	        for (prop in data) {
-	            items.push(rowPopulate({ 'secid': rid + '_' + prop, 'sec_name': prop, 'port': [] }, portlist, header, { editable: false }));
-	            items = items.concat(recursiveRender(data[prop], header, portlist, rid + '_' + prop));
-	            items.push(rowPopulate({ 'secid': rid + '_total_' + prop, 'sec_name': 'Total ' + prop, 'port': totalRow(data[prop], []) }, portlist, header, { editable: false }));
-	        }
-	    }
-
-	    return items;
-	}
-
-	function mergeChangeList(state, changeCell) {
-	    var found = false;
-	    var nextState = (0, _assign2.default)({}, state);
-	    var changelist = state.changelist;
-	    for (var i = 0; i < changelist.length; i = i + 1) {
-	        if (changelist[i].key === changeCell.key) {
-	            changelist[i].date = changeCell.data;
-	        }
-	    }
-	    if (!found) {
-	        changelist.push(changeCell);
-	    }
-
-	    nextState.changelist = changelist;
-	    return nextState;
-	}
-
-	exports.preprocessPortList = preprocessPortList;
-	exports.preprocessData = preprocessData;
-	exports.mergeChangeList = mergeChangeList;
-	exports.arrayToTree = arrayToTree;
+	exports.createTree = createTree;
 
 /***/ },
-/* 240 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = { "default": __webpack_require__(241), __esModule: true };
-
-/***/ },
-/* 241 */
-/***/ function(module, exports, __webpack_require__) {
-
-	__webpack_require__(242);
-	module.exports = __webpack_require__(189).Object.keys;
-
-/***/ },
-/* 242 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// 19.1.2.14 Object.keys(O)
-	var toObject = __webpack_require__(184);
-
-	__webpack_require__(186)('keys', function($keys){
-	  return function keys(it){
-	    return $keys(toObject(it));
-	  };
-	});
-
-/***/ },
-/* 243 */
+/* 247 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/**
@@ -35508,10 +35173,10 @@
 	  }
 	}.call(this));
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(244)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(248)(module), (function() { return this; }())))
 
 /***/ },
-/* 244 */
+/* 248 */
 /***/ function(module, exports) {
 
 	module.exports = function(module) {
@@ -35527,22 +35192,315 @@
 
 
 /***/ },
-/* 245 */
+/* 249 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
-	  value: true
+	    value: true
+	});
+	exports.RowComponent = undefined;
+
+	var _getPrototypeOf = __webpack_require__(181);
+
+	var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
+
+	var _classCallCheck2 = __webpack_require__(193);
+
+	var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+	var _createClass2 = __webpack_require__(194);
+
+	var _createClass3 = _interopRequireDefault(_createClass2);
+
+	var _possibleConstructorReturn2 = __webpack_require__(198);
+
+	var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
+
+	var _inherits2 = __webpack_require__(235);
+
+	var _inherits3 = _interopRequireDefault(_inherits2);
+
+	var _react = __webpack_require__(4);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _reactDom = __webpack_require__(179);
+
+	var _reactDom2 = _interopRequireDefault(_reactDom);
+
+	var _CellComponent = __webpack_require__(250);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var RowComponent = function (_React$Component) {
+	    (0, _inherits3.default)(RowComponent, _React$Component);
+
+	    function RowComponent(props) {
+	        (0, _classCallCheck3.default)(this, RowComponent);
+	        return (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(RowComponent).call(this, props));
+	    }
+
+	    (0, _createClass3.default)(RowComponent, [{
+	        key: 'componentWillReceiveProps',
+	        value: function componentWillReceiveProps(nextProps) {
+	            this.forceUpdate();
+	        }
+	    }, {
+	        key: 'render',
+	        value: function render() {
+	            var _props = this.props;
+	            var uid = _props.uid;
+	            var cells = _props.cells;
+
+	            var cellsList = [],
+	                i,
+	                ckey,
+	                val,
+	                style;
+
+	            for (i = 0; i < cells.length; i = i + 1) {
+
+	                cellsList.push(_react2.default.createElement(_CellComponent.CellComponent, {
+	                    key: cells[i].uid,
+	                    uid: cells[i].uid,
+	                    data: cells[i].data,
+	                    style: cells[i].style,
+	                    pos: cells[i].pos,
+	                    action: cells[i].action
+	                }));
+	            }
+
+	            return _react2.default.createElement(
+	                'tr',
+	                null,
+	                cellsList
+	            );
+	        }
+	    }]);
+	    return RowComponent;
+	}(_react2.default.Component);
+
+	exports.RowComponent = RowComponent;
+
+/***/ },
+/* 250 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.CellComponent = undefined;
+
+	var _getPrototypeOf = __webpack_require__(181);
+
+	var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
+
+	var _classCallCheck2 = __webpack_require__(193);
+
+	var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+	var _createClass2 = __webpack_require__(194);
+
+	var _createClass3 = _interopRequireDefault(_createClass2);
+
+	var _possibleConstructorReturn2 = __webpack_require__(198);
+
+	var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
+
+	var _inherits2 = __webpack_require__(235);
+
+	var _inherits3 = _interopRequireDefault(_inherits2);
+
+	var _react = __webpack_require__(4);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _reactDom = __webpack_require__(179);
+
+	var _reactDom2 = _interopRequireDefault(_reactDom);
+
+	var _lodash = __webpack_require__(247);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var CellComponent = function (_React$Component) {
+	    (0, _inherits3.default)(CellComponent, _React$Component);
+
+	    function CellComponent(props) {
+	        (0, _classCallCheck3.default)(this, CellComponent);
+
+	        // React components using ES6 classes no longer autobind this to non React methods
+	        // need to manually bind them in constructor
+
+	        var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(CellComponent).call(this, props));
+
+	        _this.onKeyDown = _this.onKeyDown.bind(_this);
+	        _this.handleClick = _this.handleClick.bind(_this);
+	        _this.handleChange = _this.handleChange.bind(_this);
+	        _this.handleFocus = _this.handleFocus.bind(_this);
+	        _this.handleBlur = _this.handleBlur.bind(_this);
+	        return _this;
+	    }
+
+	    (0, _createClass3.default)(CellComponent, [{
+	        key: 'componentWillMount',
+	        value: function componentWillMount() {
+	            this.setState({
+	                data: this.props.data,
+	                style: this.props.style
+	            });
+	        }
+
+	        /*
+	            shouldComponentUpdate (nextProps, nextState) {
+	                return (nextProps.data != this.state.data)
+	            }
+	            */
+
+	    }, {
+	        key: 'componentWillReceiveProps',
+	        value: function componentWillReceiveProps() {
+	            this.setState({
+	                style: this.props.style
+	            });
+	        }
+	    }, {
+	        key: 'handleFocus',
+	        value: function handleFocus(e) {
+	            var style = _lodash2.default.assign({}, this.props.style);
+	            // style['backgroundColor'] = "#00B1E1"
+	            this.setState({
+	                style: style
+	            });
+	        }
+	    }, {
+	        key: 'handleClick',
+	        value: function handleClick(e) {}
+	    }, {
+	        key: 'handleBlur',
+	        value: function handleBlur(e) {
+	            var style = _lodash2.default.assign({}, this.props.style);
+	            var _props = this.props;
+	            var action = _props.action;
+	            var pos = _props.pos;
+
+	            if (this.props.data != e.target.value) {
+	                style['backgroundColor'] = "#E9573F";
+	                this.setState({
+	                    style: style
+	                });
+
+	                action(pos, e.target.value, this.props.data);
+	            } else {
+	                style['backgroundColor'] = "#ffffff";
+	                this.setState({
+	                    style: style
+	                });
+	            }
+	        }
+	    }, {
+	        key: 'handleChange',
+	        value: function handleChange(e) {
+
+	            this.setState({
+	                data: e.target.value
+	            });
+	        }
+	    }, {
+	        key: 'onKeyDown',
+	        value: function onKeyDown(e) {}
+	    }, {
+	        key: 'render',
+	        value: function render() {
+	            var _props2 = this.props;
+	            var uid = _props2.uid;
+	            var data = _props2.data;
+	            var action = _props2.action;
+	            var pos = _props2.pos;
+	            var style = _props2.style;
+
+	            var cellContent, cellDiv, cellNode;
+
+	            if (style && style.editable) {
+	                cellDiv = _react2.default.createElement(
+	                    'div',
+	                    null,
+	                    _react2.default.createElement('input', { type: 'text', value: this.state.data, style: this.state.style,
+	                        onKeyDown: this.onKeyDown,
+	                        onClick: this.handleClick,
+	                        onChange: this.handleChange,
+	                        onFocus: this.handleFocus,
+	                        onBlur: this.handleBlur })
+	                );
+	            } else if (style && !style.header) {
+	                cellDiv = _react2.default.createElement(
+	                    'div',
+	                    { style: this.state.style, onClick: this.handleClick },
+	                    data
+	                );
+	            } else {
+	                cellDiv = _react2.default.createElement(
+	                    'div',
+	                    { onClick: this.handleClick },
+	                    data
+	                );
+	            }
+
+	            // use different table tags for header vs data cells
+	            if (style && style.header) {
+
+	                if (style.colspan) {
+	                    cellNode = _react2.default.createElement(
+	                        'th',
+	                        { colSpan: style.colspan },
+	                        cellDiv
+	                    );
+	                } else {
+	                    cellNode = _react2.default.createElement(
+	                        'th',
+	                        null,
+	                        cellDiv
+	                    );
+	                }
+	            } else {
+	                cellNode = _react2.default.createElement(
+	                    'td',
+	                    null,
+	                    cellDiv
+	                );
+	            }
+
+	            return cellNode;
+	        }
+	    }]);
+	    return CellComponent;
+	}(_react2.default.Component);
+
+	exports.CellComponent = CellComponent;
+
+/***/ },
+/* 251 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
 	});
 
 	var _redux = __webpack_require__(164);
 
-	var _reduxThunk = __webpack_require__(246);
+	var _reduxThunk = __webpack_require__(252);
 
 	var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
 
-	var _GridReducers = __webpack_require__(247);
+	var _GridReducers = __webpack_require__(253);
 
 	var _GridReducers2 = _interopRequireDefault(_GridReducers);
 
@@ -35551,14 +35509,14 @@
 	var createStoreWithMiddleware = (0, _redux.applyMiddleware)(_reduxThunk2.default)(_redux.createStore);
 
 	function configureStore(initialState) {
-	  return createStoreWithMiddleware(_GridReducers2.default, initialState);
+	    return createStoreWithMiddleware(_GridReducers2.default, initialState);
 	}
 
 	exports.default = configureStore;
 	module.exports = exports['default'];
 
 /***/ },
-/* 246 */
+/* 252 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -35577,82 +35535,76 @@
 	module.exports = thunkMiddleware;
 
 /***/ },
-/* 247 */
+/* 253 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _defineProperty2 = __webpack_require__(248);
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _defineProperty2 = __webpack_require__(254);
 
 	var _defineProperty3 = _interopRequireDefault(_defineProperty2);
 
-	var _assign = __webpack_require__(232);
+	var _lodash = __webpack_require__(247);
 
-	var _assign2 = _interopRequireDefault(_assign);
+	var _lodash2 = _interopRequireDefault(_lodash);
 
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
+	var _Constants = __webpack_require__(243);
 
-	var _GridActions = __webpack_require__(238);
-
-	var _constants = __webpack_require__(236);
-
-	var _constants2 = _interopRequireDefault(_constants);
-
-	var _util = __webpack_require__(239);
+	var _ReduceUtil = __webpack_require__(255);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	function handlePanelActions(state, action) {}
-
-	function handleGridActions(state, action) {
-	  switch (action.type) {
-	    case _constants2.default.ACTIONS.REQUESTDATA:
-	      return { isFetching: true };
-
-	    case _constants2.default.ACTIONS.RECEIVEDATA:
-	      return {
-	        isFetching: false,
-	        data: action.data,
-	        meta: action.meta,
-	        portlist: action.portlist,
-	        header: action.header,
-	        hierarchy: action.hierarchy,
-	        changelist: []
-	      };
-
-	    case _constants2.default.ACTIONS.PAGINATE:
-	      return state;
-
-	    case _constants2.default.ACTIONS.EDITCELL:
-	      return (0, _util.mergeChangeList)(state, { key: action.id, data: action.data });
-
-	    default:
-	      return state;
-	  }
+	function GridActionHandler(state, action) {
+	    switch (action.type) {
+	        case _Constants.ACTIONS.REQUESTDATA:
+	            return { isFetching: true,
+	                data: [],
+	                meta: [],
+	                changelist: [],
+	                vtree: {}
+	            };
+	        case _Constants.ACTIONS.RECEIVEDATA:
+	            return {
+	                isFetching: false,
+	                data: action.data,
+	                meta: action.meta,
+	                changelist: [],
+	                vtree: {}
+	            };
+	        case _Constants.ACTIONS.EDITCELL:
+	            return {
+	                isFetching: false,
+	                data: state.data,
+	                meta: state.meta,
+	                changelist: state.changelist.concat([action.data]),
+	                vtree: (0, _ReduceUtil.VtreeCellUpdate)(state.vtree, action.pos, action.data, action.odata)
+	            };
+	    }
 	}
 
-	function GridReducers(state, action) {
-	  switch (action.type) {
-	    case _constants2.default.ACTIONS.PAGINATE:
-	    case _constants2.default.ACTIONS.RECEIVEDATA:
-	    case _constants2.default.ACTIONS.REQUESTDATA:
-	      return (0, _assign2.default)({}, state, (0, _defineProperty3.default)({}, action.comp, handleGridActions(state[action.comp], action)));
+	function GridReducer(state, action) {
+	    switch (action.type) {
+	        case _Constants.ACTIONS.RECEIVEDATA:
+	        case _Constants.ACTIONS.REQUESTDATA:
+	        case _Constants.ACTIONS.EDITCELL:
+	            return _lodash2.default.assign({}, state, (0, _defineProperty3.default)({}, action.comp, GridActionHandler(state[action.comp], action)));
+	        case _Constants.ACTIONS.BUILDVTREE:
+	            return _lodash2.default.assign({}, state, (0, _ReduceUtil.VtreeMerge)(state, action));
+	        default:
+	            return state;
 
-	    case _constants2.default.ACTIONS.EDITCELL:
-	      return (0, _assign2.default)({}, state, (0, _defineProperty3.default)({}, action.comp, handleGridActions(state[action.comp], action)));
-
-	    default:
-	      return state;
-	  }
+	    }
 	}
 
-	exports.default = GridReducers;
+	exports.default = GridReducer;
 	module.exports = exports['default'];
 
 /***/ },
-/* 248 */
+/* 254 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -35679,6 +35631,77 @@
 
 	  return obj;
 	};
+
+/***/ },
+/* 255 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.VtreeCellUpdate = exports.VtreeMerge = undefined;
+
+	var _lodash = __webpack_require__(247);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function VtreeMerge(state, action) {
+	    var portlist = action.portlist;
+	    var hier = action.hier;
+	    var vtree = action.vtree;
+
+	    var newState = _lodash2.default.assign({}, state);
+	    newState['grid']['vtree'] = vtree;
+	    newState['panel']['portSelected'] = portlist;
+	    newState['panel']['heir'] = hier;
+	    return newState;
+	}
+
+	function VtreeCellUpdateHelper(rdata, port_id, col, data, odataFloat) {
+	    var method = arguments.length <= 5 || arguments[5] === undefined ? "overwrite" : arguments[5];
+
+	    var rObj, idx, newData;
+	    idx = _lodash2.default.findIndex(rdata, function (item) {
+	        return item['port_id'] == port_id;
+	    });
+	    newData = rdata.slice(0);
+	    if (idx >= 0) {
+	        rObj = _lodash2.default.assign({}, rdata[idx]);
+	        rObj[col] = method == "overwrite" ? data : parseFloat(rObj[col]) + data - odataFloat;
+	        newData[idx] = rObj;
+	    } else {
+	        rObj = { port_id: port_id };
+	        rObj[col] = data;
+	        newData.push(rObj);
+	    }
+
+	    return newData;
+	}
+
+	function VtreeCellUpdate(vtree, pos, data, odata) {
+	    var odataFloat,
+	        dataFloat,
+	        vTreeLevel,
+	        i,
+	        newVtree,
+	        newVtree = _lodash2.default.assign({}, vtree);
+	    vTreeLevel = newVtree;
+	    dataFloat = data == "" ? 0.0 : parseFloat(data);
+	    odataFloat = odata == "" ? 0.0 : parseFloat(odata);
+	    for (i = 0; i < pos.hier.length; i = i + 1) {
+	        vTreeLevel.total = VtreeCellUpdateHelper(vTreeLevel.total, pos.port_id, pos.col, dataFloat, odataFloat, "delta");
+	        vTreeLevel = vTreeLevel.children[pos.hier[i]];
+	    }
+	    vTreeLevel.rowdata = VtreeCellUpdateHelper(vTreeLevel.rowdata, pos.port_id, pos.col, dataFloat, odataFloat, "overwrite");
+	    return newVtree;
+	}
+
+	exports.VtreeMerge = VtreeMerge;
+	exports.VtreeCellUpdate = VtreeCellUpdate;
 
 /***/ }
 /******/ ]);
