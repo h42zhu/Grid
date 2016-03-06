@@ -1,19 +1,14 @@
 import React from 'react'
-import { connect } from 'react-redux'
-import { bindActionCreators } from 'redux'
-import ReactDOM from 'react-dom'
-
-import {fetchData} from '../util/FetchUtil'
-import {editCell, buildVTree} from '../actions/GridActions'
-import {ACTIONS, COLMAP} from '../constants/Constants'
+import {ACTIONS, COLMAP, DEFSTYLE} from '../constants/Constants'
 import {RowComponent} from './RowComponent'
 
 
-function RowPopulate(rowMeta, portlist, cols, data, action) {
+function RowPopulate(rowMeta, portlist, cols, data, action, disp) {
     var row = [{
                 uid: rowMeta.uid,
                 data: rowMeta.label,
-                style: {editable: false}
+                meta: {editable: false},
+                style: {width: 220, height: 25}
               }]
     var i, j, idx
 
@@ -22,7 +17,8 @@ function RowPopulate(rowMeta, portlist, cols, data, action) {
             row.push({
                 uid: rowMeta.uid + '_' + data[i]['port_id'].toString(),
                 data: data[i]['port_name'],
-                style: {editable: false, colspan: cols.length, header: true}
+                meta: {editable: false, colspan: cols.length, header: true},
+                style: DEFSTYLE.SUPERHEADER
             })
         }
 
@@ -31,7 +27,9 @@ function RowPopulate(rowMeta, portlist, cols, data, action) {
             col => ({
                 uid: port.toString() + "_" + col,
                 data: col,
-                style: {header: true}})
+                meta: {header: true},
+                style: DEFSTYLE.HEADER
+              })
             )).reduce((arr1, arr2) => arr1.concat(arr2)))
     } else if (rowMeta.type == 'label') {
         for (i=0;i<portlist.length; i=i+1) {
@@ -39,7 +37,8 @@ function RowPopulate(rowMeta, portlist, cols, data, action) {
                 row.push({
                   uid: rowMeta.uid + '_' + portlist[i].toString() + '_' + cols[j],
                   data: "",
-                  style: {editable: false}
+                  meta: {editable: false},
+                  style: DEFSTYLE.DATACELL
                 })
             }
         }
@@ -50,11 +49,16 @@ function RowPopulate(rowMeta, portlist, cols, data, action) {
                 row.push({
                   uid: rowMeta.uid.toString() + '_' + portlist[i].toString()
                        + '_' + cols[j],
-                  data: idx>=0 && data[idx][cols[j]]? data[idx][cols[j]]: "",
+                  data: (idx>=0 && data[idx].hasOwnProperty([cols[j]]))? data[idx][cols[j]]: "",
                   action: action,
                   pos: {hier: rowMeta.hier, sec_id: rowMeta.uid, port_id: portlist[i], col: cols[j]},
-                  style: {editable: rowMeta.type == 'data'
-                          && _.includes(COLMAP.edit ,cols[j])? true:false}
+                  meta: {
+                            editable: rowMeta.type == 'data'
+                                      && _.includes(COLMAP.edit ,cols[j]),
+                            disp: disp
+
+                        },
+                  style: DEFSTYLE.DATACELL
                 })
             }
         }
@@ -86,7 +90,7 @@ class GridComponent extends React.Component {
         return rows
     }
 
-    recursiveRender(vtree, portlist, cols, position=[], action=null) {
+    recursiveRender(vtree, portlist, cols, position=[], action=null, disp=2) {
         var rows = [], i, rowMeta
 
         if (vtree.children) {
@@ -99,23 +103,24 @@ class GridComponent extends React.Component {
                                   portlist, cols, position.concat([i]), action))
             }
             rowMeta = {type: 'total', uid: 'total_' + vtree.uid, label: 'Total ' + vtree.label}
-            rows.push(RowPopulate(rowMeta, portlist, cols, vtree.total))
+            rows.push(RowPopulate(rowMeta, portlist, cols, vtree.total, null, disp))
         } else if (vtree.rowdata) {
             rowMeta = {type: 'data', uid: vtree.uid, label: vtree.label, hier: position}
-            rows.push(RowPopulate(rowMeta, portlist, cols, vtree.rowdata, action))
+            rows.push(RowPopulate(rowMeta, portlist, cols, vtree.rowdata, action, disp))
         }
         return rows
     }
 
     componentWillMount () {
-        const dispatch = this.props.dispatch
-        dispatch(fetchData('/api/port_data'))
+        const fetchAction = this.props.actions.fetchData
+        fetchAction('/api/port_data')
     }
 
     componentWillReceiveProps(nextProps) {
-        const {vtree, data, portlist, isFetching, meta, dispatch, hier, cols, changelist} = nextProps
+        const {vtree, data, portlist, isFetching, meta, actions, hier, cols, changelist, dispMode} = nextProps
         if (!isFetching && _.isEmpty(vtree) && data.length > 0) {
-            dispatch(buildVTree(data, portlist, hier, cols))
+            const buildVtreeAction = actions.buildVTree
+            buildVtreeAction(data, portlist, hier, cols, dispMode)
         }
 
         if (vtree && changelist.length > 0) {this.forceUpdate()}
@@ -123,11 +128,12 @@ class GridComponent extends React.Component {
     }
 
     render () {
-        const {vtree, data, portlist, isFetching, meta, dispatch, cols} = this.props
-        let boundActionCreators = bindActionCreators(editCell, dispatch)
+        const {vtree, data, portlist, isFetching, meta, cols, actions, dispMode} = this.props
+        const editCellAction = actions.editCell
         var dataRows = [], headerRows = []
+        var disp = dispMode == "percentage"? 2:0
         if (!isFetching && portlist.length > 0 && !_.isEmpty(vtree)) {
-            dataRows = this.recursiveRender(vtree, portlist, cols, [], boundActionCreators)
+            dataRows = this.recursiveRender(vtree, portlist, cols, [], editCellAction, disp)
             headerRows = this.headersRender(meta, portlist, cols)
         }
 
@@ -144,24 +150,7 @@ class GridComponent extends React.Component {
               </table>
             </div>
         );
-
-    }
-
-}
-
-
-function select(state) {
-    return {
-        data: state.grid.data,
-        vtree: state.grid.vtree,
-        isFetching: state.grid.isFetching,
-        changelist: state.grid.changelist,
-        meta: state.grid.meta,
-        hier: state.panel.heir,
-        portlist: state.panel.portSelected,
-        cols: state.panel.cols
     }
 }
 
-//
-export default connect(select)(GridComponent)
+export {GridComponent}

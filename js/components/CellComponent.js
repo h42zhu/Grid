@@ -2,7 +2,6 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import _ from 'lodash'
 
-
 class CellComponent extends React.Component {
     constructor (props) {
         super(props)
@@ -72,42 +71,52 @@ class CellComponent extends React.Component {
     }
 
     render () {
-        const {uid, data, action, pos, style} = this.props
+        const {uid, data, action, pos, style, meta} = this.props
         var cellContent, cellDiv, cellNode
 
-        if (style && style.editable) {
+        let decimalPlace = style.disp? style.disp: 2
+        let dispData = isNaN(parseFloat(data))? data : parseFloat(data).toFixed(2)
+
+        if (meta && meta.editable) {
+            let inputStyle = {width: "100%", height: "100%"}
             cellDiv = (
             <div>
-                <input type='text' value={this.state.data} style={this.state.style}
-                    onKeyDown={this.onKeyDown}
+                <input type='text'
+                    ref={this.props.uid}
+                    value={this.state.data}
+                    style={inputStyle}
+                    defaultValue={data}
                     onClick={this.handleClick}
                     onChange={this.handleChange}
                     onFocus={this.handleFocus}
-                    onBlur={this.handleBlur}/>
+                    onBlur={this.handleBlur}
+                />
             </div>)
-        } else if (style && !style.header){
+        } else if (meta && !meta.header){
             cellDiv = (
-                <div style={this.state.style} onClick={this.handleClick}>{data}</div>
+                <div onClick={this.handleClick}>
+                  {dispData}
+                </div>
             )
         } else {
             cellDiv = (
-                <div onClick={this.handleClick}>{data}</div>
+                <div onClick={this.handleClick}>{dispData}</div>
             )
         }
 
         // use different table tags for header vs data cells
-        if (style && style.header)  {
+        if (meta && meta.header)  {
 
-            if (style.colspan) {
-                cellNode = (<th colSpan={style.colspan}>{cellDiv}</th>)
+            if (meta.colspan) {
+                cellNode = (<th colSpan={meta.colspan} style={this.state.style}>{cellDiv}</th>)
             } else {
-                cellNode = (<th>{cellDiv}</th>)
+                cellNode = (<th style={this.state.style}>{cellDiv}</th>)
             }
 
 
         } else {
             cellNode = (
-                <td>
+                <td style={this.state.style}>
                     {cellDiv}
                 </td>
             )

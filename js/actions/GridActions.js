@@ -1,5 +1,6 @@
 import {ACTIONS} from '../constants/Constants'
 import {createTree} from '../util/ViewUtil'
+import {requestData, receiveData} from '../util/FetchUtil'
 import _ from 'lodash'
 
 
@@ -10,7 +11,7 @@ function buildVTree(data, portlist, hier, cols) {
         type: ACTIONS.BUILDVTREE,
         portlist: portlist,
         hier: hier,
-        vtree: createTree(fdata, hier, cols)
+        vtree: createTree(fdata, portlist, hier, cols)
 
     })
 
@@ -27,4 +28,17 @@ function editCell(pos, ndata, odata) {
 }
 
 
-export {buildVTree, editCell}
+function fetchData (url, comp='grid') {
+    return function (dispatch) {
+        dispatch(requestData(comp))
+
+        return fetch(url)
+          .then(response => response.json())
+          .then(json =>
+            dispatch(receiveData(comp, json))
+        )
+    }
+}
+
+
+export {buildVTree, editCell, fetchData}

@@ -18,4 +18,11 @@ const COLMAP = {
 
 }
 
-export {ACTIONS, COLMAP}
+const DEFSTYLE = {
+    SUPERHEADER: {width: 180, height: 25},
+    HEADER: {width: 60, height: 25},
+    DATACELL: {width: 60, height: 25}
+
+}
+
+export {ACTIONS, COLMAP, DEFSTYLE}

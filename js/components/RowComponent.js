@@ -27,6 +27,7 @@ class RowComponent extends React.Component {
                             uid={cells[i].uid}
                             data={cells[i].data}
                             style={cells[i].style}
+                            meta={cells[i].meta}
                             pos={cells[i].pos}
                             action={cells[i].action}
                             />);

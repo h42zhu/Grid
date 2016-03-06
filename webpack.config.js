@@ -8,7 +8,11 @@ var output = {
 
 var assetsLoaders = [
   {test: /\.css$/, loader: 'style!css!autoprefixer?browsers=last 2 versions'},
-  {test: /\.json$/, loader: 'json'}
+  {test: /\.json$/, loader: 'json'},
+  {
+    test: /(\.css|\.scss)$/,
+    loader: 'style!css?sourceMap&modules&importLoaders=1&localIdentName=[name]__[local]___[hash:base64:5]!sass?sourceMap'
+  }
 ]
 
 
@@ -43,7 +47,7 @@ var production = {
     },
 
     resolve: {
-      extensions: ['', '.js', '.styl']
+      extensions: ['', '.js', '.styl', '.json']
     },
 
     stats: {
