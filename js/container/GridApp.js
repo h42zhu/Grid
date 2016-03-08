@@ -10,6 +10,12 @@ import * as GridActions from '../actions/GridActions'
 
 class GridApp extends React.Component {
 
+  constructor (props) {
+      super(props)
+  }
+
+
+
   render() {
     const {data, vtree, isFetching, changelist, meta, hier, portlist, cols,
            actions, dispMode} = this.props
@@ -18,7 +24,11 @@ class GridApp extends React.Component {
       <Tabs defaultActiveKey={1}>
         <Tab eventKey={1} title="Main">
           <div>
-            <NavComponent />
+            <NavComponent
+              portlist={portlist}
+              cols={cols}
+              meta={meta}
+            />
             <GridComponent
               data={data}
               vtree={vtree}
