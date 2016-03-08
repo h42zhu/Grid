@@ -5,7 +5,7 @@ function VtreeMerge (state, action) {
     const {portlist, hier, vtree} = action
     var newState = _.assign({}, state)
     newState['grid']['vtree'] = vtree
-    newState['panel']['portSelected'] = portlist
+    newState['grid']['portlist'] = portlist
     newState['panel']['heir'] = hier
     return newState
 }
@@ -43,6 +43,5 @@ function VtreeCellUpdate (vtree, pos, data, odata) {
     vTreeLevel.rowdata = VtreeCellUpdateHelper(vTreeLevel.rowdata, pos.port_id, pos.col, dataFloat, odataFloat, "overwrite")
     return newVtree
 }
-
 
 export {VtreeMerge, VtreeCellUpdate}

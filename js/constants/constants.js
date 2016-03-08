@@ -3,7 +3,6 @@ import keymirror from 'keymirror'
 const ACTIONS = keymirror({
     PAGINATE: null,
     EDITCELL: null,
-    REFRESH: null,
     REQUESTDATA: null,
     RECEIVEDATA: null,
     BUILDVTREE: null
@@ -25,4 +24,8 @@ const DEFSTYLE = {
 
 }
 
-export {ACTIONS, COLMAP, DEFSTYLE}
+const COMPREFS = {
+    TOGGLEPORTFOLIO: "TOGGLEPORTFOLIO"
+}
+
+export {ACTIONS, COLMAP, DEFSTYLE, COMPREFS}

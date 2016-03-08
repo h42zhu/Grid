@@ -60,7 +60,7 @@
 
 	var _GridApp2 = _interopRequireDefault(_GridApp);
 
-	var _store = __webpack_require__(518);
+	var _store = __webpack_require__(519);
 
 	var _store2 = _interopRequireDefault(_store);
 
@@ -75,14 +75,14 @@
 	        meta: [],
 	        changelist: [],
 	        isFetching: false,
-	        vtree: {}
+	        vtree: {},
+	        portlist: []
 	    },
 
 	    // Panel State
 	    panel: {
 	        heir: ["asset_class", "region"],
 	        cols: ["cur", "trg", "bmk"],
-	        portSelected: [5866, 3676],
 	        dispMode: "percentage"
 	    }
 	};
@@ -21193,7 +21193,7 @@
 
 	var _NavComponent = __webpack_require__(514);
 
-	var _GridActions = __webpack_require__(515);
+	var _GridActions = __webpack_require__(516);
 
 	var GridActions = _interopRequireWildcard(_GridActions);
 
@@ -21204,9 +21204,9 @@
 	var GridApp = function (_React$Component) {
 	  (0, _inherits3.default)(GridApp, _React$Component);
 
-	  function GridApp() {
+	  function GridApp(props) {
 	    (0, _classCallCheck3.default)(this, GridApp);
-	    return (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(GridApp).apply(this, arguments));
+	    return (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(GridApp).call(this, props));
 	  }
 
 	  (0, _createClass3.default)(GridApp, [{
@@ -21234,7 +21234,15 @@
 	          _react2.default.createElement(
 	            'div',
 	            null,
-	            _react2.default.createElement(_NavComponent.NavComponent, null),
+	            _react2.default.createElement(_NavComponent.NavComponent, {
+	              portlist: portlist,
+	              cols: cols,
+	              meta: meta,
+	              data: data,
+	              hier: hier,
+	              actions: actions,
+	              dispMode: dispMode
+	            }),
 	            _react2.default.createElement(_GridComponent.GridComponent, {
 	              data: data,
 	              vtree: vtree,
@@ -21273,7 +21281,7 @@
 	    changelist: state.grid.changelist,
 	    meta: state.grid.meta,
 	    hier: state.panel.heir,
-	    portlist: state.panel.portSelected,
+	    portlist: state.grid.portlist,
 	    cols: state.panel.cols,
 	    dispMode: state.panel.dispMode
 	  };
@@ -39940,7 +39948,8 @@
 	                    uid: rowMeta.uid.toString() + '_' + portlist[i].toString() + '_' + cols[j],
 	                    data: idx >= 0 && data[idx].hasOwnProperty([cols[j]]) ? data[idx][cols[j]] : "",
 	                    action: action,
-	                    pos: { hier: rowMeta.hier, sec_id: rowMeta.uid, port_id: portlist[i], col: cols[j] },
+	                    pos: { hier: rowMeta.hier, sec_id: rowMeta.uid,
+	                        port_id: portlist[i], col: cols[j] },
 	                    meta: {
 	                        editable: rowMeta.type == 'data' && _.includes(_Constants.COLMAP.edit, cols[j]),
 	                        disp: disp
@@ -39983,6 +39992,7 @@
 	            });
 	            rowMeta = { type: 'superheader', uid: 'superheader', label: "" };
 	            rows.push(RowPopulate(rowMeta, portlist, cols, superHeader));
+
 	            rowMeta = { type: 'header', uid: 'header', label: meta.current_date };
 	            rows.push(RowPopulate(rowMeta, portlist, cols));
 	            return rows;
@@ -40042,7 +40052,6 @@
 	            if (vtree && changelist.length > 0) {
 	                this.forceUpdate();
 	            }
-	            console.log(nextProps);
 	        }
 	    }, {
 	        key: 'render',
@@ -40100,7 +40109,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.DEFSTYLE = exports.COLMAP = exports.ACTIONS = undefined;
+	exports.COMPREFS = exports.DEFSTYLE = exports.COLMAP = exports.ACTIONS = undefined;
 
 	var _keymirror = __webpack_require__(509);
 
@@ -40111,7 +40120,6 @@
 	var ACTIONS = (0, _keymirror2.default)({
 	    PAGINATE: null,
 	    EDITCELL: null,
-	    REFRESH: null,
 	    REQUESTDATA: null,
 	    RECEIVEDATA: null,
 	    BUILDVTREE: null
@@ -40133,9 +40141,14 @@
 
 	};
 
+	var COMPREFS = {
+	    TOGGLEPORTFOLIO: "TOGGLEPORTFOLIO"
+	};
+
 	exports.ACTIONS = ACTIONS;
 	exports.COLMAP = COLMAP;
 	exports.DEFSTYLE = DEFSTYLE;
+	exports.COMPREFS = COMPREFS;
 
 /***/ },
 /* 509 */
@@ -52903,9 +52916,9 @@
 
 	var _reactBootstrap = __webpack_require__(263);
 
-	var _lodash = __webpack_require__(512);
+	var _FilterListComponent = __webpack_require__(515);
 
-	var _lodash2 = _interopRequireDefault(_lodash);
+	var _Constants = __webpack_require__(508);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -52914,32 +52927,161 @@
 
 	    function NavComponent(props) {
 	        (0, _classCallCheck3.default)(this, NavComponent);
-	        return (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(NavComponent).call(this, props));
+
+	        var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(NavComponent).call(this, props));
+
+	        _this.showTogglePortfolio = _this.showTogglePortfolio.bind(_this);
+	        _this.showConfigureGrid = _this.showConfigureGrid.bind(_this);
+	        _this.closeTogglePortfolio = _this.closeTogglePortfolio.bind(_this);
+	        _this.closeConfigureGrid = _this.closeConfigureGrid.bind(_this);
+	        _this.onRefreshPortlist = _this.onRefreshPortlist.bind(_this);
+	        return _this;
 	    }
 
 	    (0, _createClass3.default)(NavComponent, [{
 	        key: 'componentWillMount',
-	        value: function componentWillMount() {}
+	        value: function componentWillMount() {
+	            this.setState({
+	                showPortSelect: false,
+	                showConfigGrid: false
+	            });
+	        }
+	    }, {
+	        key: 'showTogglePortfolio',
+	        value: function showTogglePortfolio() {
+	            this.setState({
+	                showPortSelect: true
+	            });
+	        }
+	    }, {
+	        key: 'closeTogglePortfolio',
+	        value: function closeTogglePortfolio() {
+	            this.setState({
+	                showPortSelect: false
+	            });
+	        }
+	    }, {
+	        key: 'showConfigureGrid',
+	        value: function showConfigureGrid() {
+	            this.setState({
+	                showConfigGrid: true
+	            });
+	        }
+	    }, {
+	        key: 'closeConfigureGrid',
+	        value: function closeConfigureGrid() {
+	            this.setState({
+	                showConfigGrid: false
+	            });
+	        }
+	    }, {
+	        key: 'onRefreshPortlist',
+	        value: function onRefreshPortlist() {
+	            var _props = this.props;
+	            var data = _props.data;
+	            var dispMode = _props.dispMode;
+	            var hier = _props.hier;
+	            var cols = _props.cols;
+	            var actions = _props.actions;
+
+	            var portSelected = this.refs[_Constants.COMPREFS.TOGGLEPORTFOLIO].state.checkedlist;
+	            var portlist = [];
+	            for (var prop in portSelected) {
+	                if (portSelected[prop]) {
+	                    portlist.push(parseInt(prop));
+	                }
+	            }
+	            this.setState({
+	                showPortSelect: false
+	            });
+
+	            actions.buildVTree(data, portlist, hier, cols, dispMode);
+	        }
 	    }, {
 	        key: 'render',
 	        value: function render() {
+	            var _props2 = this.props;
+	            var portlist = _props2.portlist;
+	            var cols = _props2.cols;
+	            var meta = _props2.meta;
+
 	            return _react2.default.createElement(
-	                _reactBootstrap.Panel,
+	                'div',
 	                null,
 	                _react2.default.createElement(
-	                    _reactBootstrap.Button,
+	                    _reactBootstrap.Panel,
 	                    null,
-	                    'Toggle Portfolio'
+	                    _react2.default.createElement(
+	                        _reactBootstrap.Button,
+	                        { onClick: this.showTogglePortfolio },
+	                        'Toggle Portfolio'
+	                    ),
+	                    _react2.default.createElement(
+	                        _reactBootstrap.Button,
+	                        { onClick: this.showConfigureGrid },
+	                        'Configure Grid'
+	                    ),
+	                    _react2.default.createElement(
+	                        _reactBootstrap.Button,
+	                        null,
+	                        'Tactical Weights'
+	                    )
 	                ),
 	                _react2.default.createElement(
-	                    _reactBootstrap.Button,
-	                    null,
-	                    'Configure Grid'
+	                    _reactBootstrap.Modal,
+	                    { show: this.state.showPortSelect, onHide: this.closeTogglePortfolio },
+	                    _react2.default.createElement(
+	                        _reactBootstrap.Modal.Header,
+	                        { closeButton: true },
+	                        _react2.default.createElement(
+	                            _reactBootstrap.Button,
+	                            {
+	                                bsStyle: 'primary',
+	                                onClick: this.onRefreshPortlist },
+	                            'Refresh'
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        _reactBootstrap.Modal.Body,
+	                        null,
+	                        _react2.default.createElement(_FilterListComponent.FilterListComponent, {
+	                            ref: _Constants.COMPREFS.TOGGLEPORTFOLIO,
+	                            portlist: portlist,
+	                            meta: meta
+	                        })
+	                    ),
+	                    _react2.default.createElement(
+	                        _reactBootstrap.Modal.Footer,
+	                        null,
+	                        _react2.default.createElement(
+	                            _reactBootstrap.Button,
+	                            { onClick: this.closeTogglePortfolio },
+	                            'Close'
+	                        )
+	                    )
 	                ),
 	                _react2.default.createElement(
-	                    _reactBootstrap.Button,
-	                    null,
-	                    'Tactical Weights'
+	                    _reactBootstrap.Modal,
+	                    { show: this.state.showConfigGrid, onHide: this.closeConfigureGrid },
+	                    _react2.default.createElement(
+	                        _reactBootstrap.Modal.Header,
+	                        { closeButton: true },
+	                        _react2.default.createElement(
+	                            _reactBootstrap.Button,
+	                            { bsStyle: 'primary' },
+	                            'Refresh'
+	                        )
+	                    ),
+	                    _react2.default.createElement(_reactBootstrap.Modal.Body, null),
+	                    _react2.default.createElement(
+	                        _reactBootstrap.Modal.Footer,
+	                        null,
+	                        _react2.default.createElement(
+	                            _reactBootstrap.Button,
+	                            { onClick: this.closeConfigureGrid },
+	                            'Cancel'
+	                        )
+	                    )
 	                )
 	            );
 	        }
@@ -52958,13 +53100,184 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+	exports.FilterListComponent = undefined;
+
+	var _getPrototypeOf = __webpack_require__(181);
+
+	var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
+
+	var _classCallCheck2 = __webpack_require__(207);
+
+	var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+	var _createClass2 = __webpack_require__(208);
+
+	var _createClass3 = _interopRequireDefault(_createClass2);
+
+	var _possibleConstructorReturn2 = __webpack_require__(212);
+
+	var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
+
+	var _inherits2 = __webpack_require__(255);
+
+	var _inherits3 = _interopRequireDefault(_inherits2);
+
+	var _react = __webpack_require__(4);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _lodash = __webpack_require__(512);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
+	var _reactBootstrap = __webpack_require__(263);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var FilterListComponent = function (_React$Component) {
+	    (0, _inherits3.default)(FilterListComponent, _React$Component);
+
+	    function FilterListComponent(props) {
+	        (0, _classCallCheck3.default)(this, FilterListComponent);
+
+	        var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(FilterListComponent).call(this, props));
+
+	        _this.renderItem = _this.renderItem.bind(_this);
+	        _this.handleChange = _this.handleChange.bind(_this);
+	        _this.handleCheckAll = _this.handleCheckAll.bind(_this);
+	        return _this;
+	    }
+
+	    (0, _createClass3.default)(FilterListComponent, [{
+	        key: 'componentWillMount',
+	        value: function componentWillMount() {
+	            var _props = this.props;
+	            var meta = _props.meta;
+	            var portlist = _props.portlist;
+
+	            var checkedlist = {};
+
+	            for (var i = 0; i < meta.portlist.length; i = i + 1) {
+	                var port = meta.portlist[i];
+	                var checked = _lodash2.default.includes(portlist, port['port_id']);
+	                checkedlist[port['port_id']] = checked;
+	            }
+	            var checkevery = _lodash2.default.values(checkedlist).reduce(function (acc, cur) {
+	                return acc && cur;
+	            });
+
+	            this.setState({
+	                checkall: checkevery,
+	                checkedlist: checkedlist
+	            });
+	        }
+	    }, {
+	        key: 'handleChange',
+	        value: function handleChange(item) {
+	            var newCheckedlist = _lodash2.default.assign({}, this.state.checkedlist);
+	            newCheckedlist[item['port_id']] = !newCheckedlist[item['port_id']];
+	            var checkevery = _lodash2.default.values(newCheckedlist).reduce(function (acc, cur) {
+	                return acc && cur;
+	            });
+
+	            this.setState({
+	                checkall: checkevery,
+	                checkedlist: newCheckedlist
+	            });
+	        }
+	    }, {
+	        key: 'handleCheckAll',
+	        value: function handleCheckAll() {
+	            var newCheckedlist = _lodash2.default.assign({}, this.state.checkedlist);
+	            if (this.state.checkall) {
+	                for (var prop in newCheckedlist) {
+	                    newCheckedlist[prop] = false;
+	                }
+	                this.setState({
+	                    checkall: false,
+	                    checkedlist: newCheckedlist
+	                });
+	            } else {
+	                for (var prop in newCheckedlist) {
+	                    newCheckedlist[prop] = true;
+	                }
+	                this.setState({
+	                    checkall: true,
+	                    checkedlist: newCheckedlist
+	                });
+	            }
+	        }
+	    }, {
+	        key: 'renderItem',
+	        value: function renderItem(item) {
+	            return _react2.default.createElement(
+	                'li',
+	                { key: item.port_id },
+	                _react2.default.createElement(_reactBootstrap.Input, {
+	                    type: 'checkbox',
+	                    label: item.port_name,
+	                    checked: this.state.checkedlist[item['port_id']],
+	                    onChange: this.handleChange.bind(this, item)
+	                })
+	            );
+	        }
+	    }, {
+	        key: 'render',
+	        value: function render() {
+	            var _this2 = this;
+
+	            var meta = this.props.meta;
+	            var ports = meta.portlist.map(function (item) {
+	                return _this2.renderItem(item);
+	            });
+
+	            return _react2.default.createElement(
+	                'div',
+	                null,
+	                _react2.default.createElement(
+	                    'ul',
+	                    null,
+	                    _react2.default.createElement(
+	                        'li',
+	                        null,
+	                        _react2.default.createElement(_reactBootstrap.Input, {
+	                            type: 'checkbox',
+	                            label: 'All',
+	                            checked: this.state.checkall,
+	                            onChange: this.handleCheckAll
+	                        }),
+	                        ' ',
+	                        _react2.default.createElement(
+	                            'ul',
+	                            null,
+	                            ports
+	                        )
+	                    )
+	                )
+	            );
+	        }
+	    }]);
+	    return FilterListComponent;
+	}(_react2.default.Component);
+
+	exports.FilterListComponent = FilterListComponent;
+
+/***/ },
+/* 516 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
 	exports.fetchData = exports.editCell = exports.buildVTree = undefined;
 
 	var _Constants = __webpack_require__(508);
 
-	var _ViewUtil = __webpack_require__(516);
+	var _ViewUtil = __webpack_require__(517);
 
-	var _FetchUtil = __webpack_require__(517);
+	var _FetchUtil = __webpack_require__(518);
 
 	var _lodash = __webpack_require__(512);
 
@@ -53015,7 +53328,7 @@
 	exports.fetchData = fetchData;
 
 /***/ },
-/* 516 */
+/* 517 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53144,7 +53457,7 @@
 	exports.createTree = createTree;
 
 /***/ },
-/* 517 */
+/* 518 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53176,7 +53489,7 @@
 	exports.receiveData = receiveData;
 
 /***/ },
-/* 518 */
+/* 519 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53187,11 +53500,11 @@
 
 	var _redux = __webpack_require__(164);
 
-	var _reduxThunk = __webpack_require__(519);
+	var _reduxThunk = __webpack_require__(520);
 
 	var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
 
-	var _GridReducers = __webpack_require__(520);
+	var _GridReducers = __webpack_require__(521);
 
 	var _GridReducers2 = _interopRequireDefault(_GridReducers);
 
@@ -53207,7 +53520,7 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 519 */
+/* 520 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -53226,7 +53539,7 @@
 	module.exports = thunkMiddleware;
 
 /***/ },
-/* 520 */
+/* 521 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53235,7 +53548,7 @@
 	    value: true
 	});
 
-	var _defineProperty2 = __webpack_require__(521);
+	var _defineProperty2 = __webpack_require__(522);
 
 	var _defineProperty3 = _interopRequireDefault(_defineProperty2);
 
@@ -53245,26 +53558,20 @@
 
 	var _Constants = __webpack_require__(508);
 
-	var _ReduceUtil = __webpack_require__(522);
+	var _ReduceUtil = __webpack_require__(523);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function GridActionHandler(state, action) {
 	    switch (action.type) {
 	        case _Constants.ACTIONS.REQUESTDATA:
-	            return { isFetching: true,
+	            return {
+	                isFetching: true,
 	                data: [],
 	                meta: [],
 	                changelist: [],
-	                vtree: {}
-	            };
-	        case _Constants.ACTIONS.RECEIVEDATA:
-	            return {
-	                isFetching: false,
-	                data: action.data,
-	                meta: action.meta,
-	                changelist: [],
-	                vtree: {}
+	                vtree: {},
+	                portlist: []
 	            };
 	        case _Constants.ACTIONS.EDITCELL:
 	            return {
@@ -53272,17 +53579,30 @@
 	                data: state.data,
 	                meta: state.meta,
 	                changelist: state.changelist.concat([action.data]),
-	                vtree: (0, _ReduceUtil.VtreeCellUpdate)(state.vtree, action.pos, action.data, action.odata)
+	                vtree: (0, _ReduceUtil.VtreeCellUpdate)(state.vtree, action.pos, action.data, action.odata),
+	                portlist: state.portlist
+	            };
+	        case _Constants.ACTIONS.RECEIVEDATA:
+	            return {
+	                isFetching: false,
+	                data: action.data,
+	                meta: action.meta,
+	                changelist: [],
+	                vtree: {},
+	                portlist: action.meta.portlist.map(function (item) {
+	                    return item['port_id'];
+	                })
 	            };
 	    }
 	}
 
 	function GridReducer(state, action) {
 	    switch (action.type) {
-	        case _Constants.ACTIONS.RECEIVEDATA:
 	        case _Constants.ACTIONS.REQUESTDATA:
 	        case _Constants.ACTIONS.EDITCELL:
+	        case _Constants.ACTIONS.RECEIVEDATA:
 	            return _lodash2.default.assign({}, state, (0, _defineProperty3.default)({}, action.comp, GridActionHandler(state[action.comp], action)));
+
 	        case _Constants.ACTIONS.BUILDVTREE:
 	            return _lodash2.default.assign({}, state, (0, _ReduceUtil.VtreeMerge)(state, action));
 	        default:
@@ -53295,7 +53615,7 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 521 */
+/* 522 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -53324,7 +53644,7 @@
 	};
 
 /***/ },
-/* 522 */
+/* 523 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -53347,7 +53667,7 @@
 
 	    var newState = _lodash2.default.assign({}, state);
 	    newState['grid']['vtree'] = vtree;
-	    newState['panel']['portSelected'] = portlist;
+	    newState['grid']['portlist'] = portlist;
 	    newState['panel']['heir'] = hier;
 	    return newState;
 	}

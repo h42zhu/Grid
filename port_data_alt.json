@@ -1,7 +1,7 @@
 {"meta": {"current_date": "2016/02/18",
-          "portlist": [{"port_id": 5866, "port_name": "NAITSA", "nav": ""},
-              {"port_id": 5059, "port_name": "NAIT Long Term Investment Fund", "nav": ""},
-              {"port_id": 3676, "port_name": "Metis Settlements Future Fund", "nav": ""}]
+          "portlist": [{"port_id": 5866, "port_name": "NAITSA", "nav": "", "group": "", "account_code" : "1111"},
+              {"port_id": 5059, "port_name": "NAIT Long Term Investment Fund", "nav": "", "group": "", "account_code" : "1112"},
+              {"port_id": 3676, "port_name": "Metis Settlements Future Fund", "nav": "", "group": "", "account_code" : "1113"}]
           },
 "tree": [
   {"security_class": "Cash", "market_cap": "", "asset_class": "Cash", "weight_benchmark": 0.0, "region": "CANADA", "security_name": "CASH", "weight_target": 0.0, "port_name": "Metis Settlements Future Fund", "weight_current": 0.274790862628886, "security_id": 16929, "port_id": 3676},

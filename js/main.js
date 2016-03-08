@@ -13,14 +13,14 @@ const initialState = {
         meta: [],
         changelist: [],
         isFetching: false,
-        vtree : {}
+        vtree : {},
+        portlist: []
     },
 
     // Panel State
     panel: {
         heir: ["asset_class", "region"],
         cols: ["cur", "trg", "bmk"],
-        portSelected: [5866, 3676],
         dispMode: "percentage"
     }
 }

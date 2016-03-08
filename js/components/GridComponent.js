@@ -49,9 +49,11 @@ function RowPopulate(rowMeta, portlist, cols, data, action, disp) {
                 row.push({
                   uid: rowMeta.uid.toString() + '_' + portlist[i].toString()
                        + '_' + cols[j],
-                  data: (idx>=0 && data[idx].hasOwnProperty([cols[j]]))? data[idx][cols[j]]: "",
+                  data: (idx>=0 && data[idx].hasOwnProperty([cols[j]]))?
+                        data[idx][cols[j]]: "",
                   action: action,
-                  pos: {hier: rowMeta.hier, sec_id: rowMeta.uid, port_id: portlist[i], col: cols[j]},
+                  pos: {hier: rowMeta.hier, sec_id: rowMeta.uid,
+                        port_id: portlist[i], col: cols[j]},
                   meta: {
                             editable: rowMeta.type == 'data'
                                       && _.includes(COLMAP.edit ,cols[j]),
@@ -85,6 +87,7 @@ class GridComponent extends React.Component {
         superHeader = meta.portlist.filter(item=>_.includes(portlist, item['port_id']))
         rowMeta = {type: 'superheader', uid: 'superheader', label: ""}
         rows.push(RowPopulate(rowMeta, portlist, cols, superHeader))
+
         rowMeta = {type: 'header', uid: 'header', label: meta.current_date}
         rows.push(RowPopulate(rowMeta, portlist, cols))
         return rows
@@ -123,8 +126,9 @@ class GridComponent extends React.Component {
             buildVtreeAction(data, portlist, hier, cols, dispMode)
         }
 
-        if (vtree && changelist.length > 0) {this.forceUpdate()}
-        console.log(nextProps)
+        if (vtree && changelist.length > 0) {
+            this.forceUpdate()
+        }
     }
 
     render () {

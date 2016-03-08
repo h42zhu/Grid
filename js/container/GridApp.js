@@ -28,6 +28,10 @@ class GridApp extends React.Component {
               portlist={portlist}
               cols={cols}
               meta={meta}
+              data={data}
+              hier={hier}
+              actions={actions}
+              dispMode={dispMode}
             />
             <GridComponent
               data={data}
@@ -61,7 +65,7 @@ function selectProps(state) {
         changelist: state.grid.changelist,
         meta: state.grid.meta,
         hier: state.panel.heir,
-        portlist: state.panel.portSelected,
+        portlist: state.grid.portlist,
         cols: state.panel.cols,
         dispMode: state.panel.dispMode
     }
