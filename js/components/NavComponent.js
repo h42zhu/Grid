@@ -1,7 +1,8 @@
 import React from 'react'
-import { Panel, Button, Modal, closeButton} from 'react-bootstrap'
+import { Panel, Button, Modal, closeButton, Accordion } from 'react-bootstrap'
 import { FilterListComponent } from './FilterListComponent'
 import { COMPREFS } from '../constants/Constants'
+import DndContainer from './DndContainer'
 
 class NavComponent extends React.Component {
 
@@ -12,6 +13,7 @@ class NavComponent extends React.Component {
         this.closeTogglePortfolio = this.closeTogglePortfolio.bind(this)
         this.closeConfigureGrid = this.closeConfigureGrid.bind(this)
         this.onRefreshPortlist = this.onRefreshPortlist.bind(this)
+        this.onRefreshConfigGrid = this.onRefreshConfigGrid.bind(this)
     }
 
     componentWillMount () {
@@ -22,31 +24,31 @@ class NavComponent extends React.Component {
     }
 
 
-    showTogglePortfolio() {
+    showTogglePortfolio () {
         this.setState({
             showPortSelect: true
         })
     }
 
-    closeTogglePortfolio() {
+    closeTogglePortfolio () {
         this.setState({
             showPortSelect: false
         })
     }
 
-    showConfigureGrid() {
+    showConfigureGrid () {
         this.setState({
             showConfigGrid: true
         })
     }
 
-    closeConfigureGrid() {
+    closeConfigureGrid () {
         this.setState({
             showConfigGrid: false
         })
     }
 
-    onRefreshPortlist() {
+    onRefreshPortlist () {
 
         const {data, dispMode, hier, cols, actions} = this.props
         let portSelected = this.refs[COMPREFS.TOGGLEPORTFOLIO].state.checkedlist
@@ -60,6 +62,13 @@ class NavComponent extends React.Component {
 
         actions.buildVTree(data, portlist, hier, cols, dispMode)
     }
+
+    onRefreshConfigGrid () {
+        this.setState({
+            showConfigGrid: false
+        })
+    }
+
 
     render () {
         const {portlist, cols, meta} = this.props
@@ -95,11 +104,20 @@ class NavComponent extends React.Component {
 
                 <Modal show={this.state.showConfigGrid} onHide={this.closeConfigureGrid}>
                     <Modal.Header closeButton>
-                        <Button bsStyle="primary">Refresh</Button>
+                        <Button bsStyle="primary" onClick={this.onRefreshConfigGrid}>
+                            Refresh
+                        </Button>
                     </Modal.Header>
 
                     <Modal.Body>
-
+                        <Accordion>
+                            <Panel header="Hierarchy" eventKey="1">
+                                <DndContainer />
+                            </Panel>
+                            <Panel header="Toggle Columns" eventKey="2">
+                                Placeholder
+                            </Panel>
+                        </Accordion>
                     </Modal.Body>
 
                     <Modal.Footer>

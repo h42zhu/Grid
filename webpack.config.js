@@ -26,7 +26,7 @@ var babelLoader = {
   // Options to configure babel
   query: {
     cacheDirectory: true,
-    plugins: ['transform-runtime', 'babel-plugin-add-module-exports'],
+    plugins: ['transform-runtime', 'babel-plugin-add-module-exports', 'transform-decorators-legacy'],
     presets: ['es2015', 'react']
   }
 }
