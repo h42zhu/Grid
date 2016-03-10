@@ -1,8 +1,9 @@
 import React from 'react'
 import { Panel, Button, Modal, closeButton, Accordion } from 'react-bootstrap'
 import { FilterListComponent } from './FilterListComponent'
-import { COMPREFS } from '../constants/Constants'
+import { COMPREFS, ALLHEIRARCHY } from '../constants/Constants'
 import DndContainer from './DndContainer'
+import HierContainer from './HierContainer'
 
 class NavComponent extends React.Component {
 
@@ -71,7 +72,7 @@ class NavComponent extends React.Component {
 
 
     render () {
-        const {portlist, cols, meta} = this.props
+        const {portlist, cols, meta, hier} = this.props
         return (
             <div>
                 <Panel>
@@ -112,7 +113,10 @@ class NavComponent extends React.Component {
                     <Modal.Body>
                         <Accordion>
                             <Panel header="Hierarchy" eventKey="1">
-                                <DndContainer />
+                                <HierContainer
+                                    allHier={ALLHEIRARCHY}
+                                    selectedHier={hier}
+                                />
                             </Panel>
                             <Panel header="Toggle Columns" eventKey="2">
                                 Placeholder

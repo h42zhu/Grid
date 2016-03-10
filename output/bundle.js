@@ -60,7 +60,7 @@
 
 	var _GridApp2 = _interopRequireDefault(_GridApp);
 
-	var _store = __webpack_require__(715);
+	var _store = __webpack_require__(716);
 
 	var _store2 = _interopRequireDefault(_store);
 
@@ -21193,7 +21193,7 @@
 
 	var _NavComponent = __webpack_require__(514);
 
-	var _GridActions = __webpack_require__(712);
+	var _GridActions = __webpack_require__(713);
 
 	var GridActions = _interopRequireWildcard(_GridActions);
 
@@ -40109,7 +40109,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.ITEMTYPES = exports.COMPREFS = exports.DEFSTYLE = exports.COLMAP = exports.ACTIONS = undefined;
+	exports.ALLHEIRARCHY = exports.ITEMTYPES = exports.COMPREFS = exports.DEFSTYLE = exports.COLMAP = exports.ACTIONS = undefined;
 
 	var _keymirror = __webpack_require__(509);
 
@@ -40150,11 +40150,14 @@
 	    CARD: "CARD"
 	};
 
+	var ALLHEIRARCHY = [{ value: "security_class", text: "Security Value" }, { value: "asset_class", text: "Asset Value" }, { value: "region", text: "Region" }, { value: "market_cap", text: "Market Cap" }];
+
 	exports.ACTIONS = ACTIONS;
 	exports.COLMAP = COLMAP;
 	exports.DEFSTYLE = DEFSTYLE;
 	exports.COMPREFS = COMPREFS;
 	exports.ITEMTYPES = ITEMTYPES;
+	exports.ALLHEIRARCHY = ALLHEIRARCHY;
 
 /***/ },
 /* 509 */
@@ -52930,6 +52933,10 @@
 
 	var _DndContainer2 = _interopRequireDefault(_DndContainer);
 
+	var _HierContainer = __webpack_require__(712);
+
+	var _HierContainer2 = _interopRequireDefault(_HierContainer);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	var NavComponent = function (_React$Component) {
@@ -53022,6 +53029,7 @@
 	            var portlist = _props2.portlist;
 	            var cols = _props2.cols;
 	            var meta = _props2.meta;
+	            var hier = _props2.hier;
 
 	            return _react2.default.createElement(
 	                'div',
@@ -53099,7 +53107,10 @@
 	                            _react2.default.createElement(
 	                                _reactBootstrap.Panel,
 	                                { header: 'Hierarchy', eventKey: '1' },
-	                                _react2.default.createElement(_DndContainer2.default, null)
+	                                _react2.default.createElement(_HierContainer2.default, {
+	                                    allHier: _Constants.ALLHEIRARCHY,
+	                                    selectedHier: hier
+	                                })
 	                            ),
 	                            _react2.default.createElement(
 	                                _reactBootstrap.Panel,
@@ -53347,11 +53358,9 @@
 
 	var _DropComponent2 = _interopRequireDefault(_DropComponent);
 
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	var _Constants = __webpack_require__(508);
 
-	var style = {
-	    width: 200
-	};
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	var DndContainer = (_dec = (0, _reactDnd.DragDropContext)(_reactDndHtml5Backend2.default), _dec(_class = function (_React$Component) {
 	    (0, _inherits3.default)(DndContainer, _React$Component);
@@ -53362,15 +53371,40 @@
 	        var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(DndContainer).call(this, props));
 
 	        _this.moveCard = _this.moveCard.bind(_this);
+	        _this.updateCards = _this.updateCards.bind(_this);
+	        _this.removeCard = _this.removeCard.bind(_this);
 	        return _this;
 	    }
 
 	    (0, _createClass3.default)(DndContainer, [{
+	        key: 'updateCards',
+	        value: function updateCards(cards) {
+	            var cardlist = [],
+	                idx;
+	            for (var key in cards) {
+	                if (cards[key]) {
+	                    idx = _.findIndex(_Constants.ALLHEIRARCHY, function (item) {
+	                        return item['value'] == key;
+	                    });
+	                    cardlist.push(_Constants.ALLHEIRARCHY[idx]);
+	                }
+	            }
+
+	            this.setState({
+	                cards: cardlist
+	            });
+	        }
+	    }, {
 	        key: 'componentWillMount',
 	        value: function componentWillMount() {
-	            this.setState({
-	                cards: [{ id: 1, text: 'Asset Class', name: 'asset_class' }, { id: 2, text: 'Region', name: 'region' }]
-	            });
+	            var cards = this.props.cards;
+	            this.updateCards(cards);
+	        }
+	    }, {
+	        key: 'componentWillReceiveProps',
+	        value: function componentWillReceiveProps(nextProps) {
+	            var cards = nextProps.cards;
+	            this.updateCards(cards);
 	        }
 	    }, {
 	        key: 'moveCard',
@@ -53383,6 +53417,14 @@
 	                    $splice: [[dragIndex, 1], [hoverIndex, 0, dragCard]]
 	                }
 	            }));
+	        }
+	    }, {
+	        key: 'removeCard',
+	        value: function removeCard(value) {
+	            var cards = this.state.cards;
+	            var idx = _.findIndex(cards, function (item) {
+	                return item['value'] == value;
+	            });
 	        }
 	    }, {
 	        key: 'render',
@@ -53403,9 +53445,10 @@
 	                { style: style },
 	                cards.map(function (card, i) {
 	                    return _react2.default.createElement(_DropComponent2.default, {
-	                        key: card.id,
+	                        key: i,
 	                        index: i,
-	                        id: card.id,
+	                        id: i,
+	                        value: card.value,
 	                        text: card.text,
 	                        moveCard: _this2.moveCard });
 	                })
@@ -62717,19 +62760,19 @@
 	            id: props.id,
 	            index: props.index
 	        };
-	    }
+	    },
+	    endDrag: function endDrag(props, monitor) {
+	        var _monitor$getItem = monitor.getItem();
 
-	    /*
-	        endDrag(props, monitor) {
-	            const { id: droppedId, originalIndex } = monitor.getItem();
-	            const didDrop = monitor.didDrop();
-	    
-	            if (!didDrop) {
-	                props.moveCard(droppedId, originalIndex);
-	            }
+	        var droppedId = _monitor$getItem.id;
+	        var originalIndex = _monitor$getItem.originalIndex;
+
+	        var didDrop = monitor.didDrop();
+
+	        if (!didDrop) {
+	            props.moveCard(droppedId, originalIndex);
 	        }
-	    */
-
+	    }
 	};
 
 	var cardTarget = {
@@ -62771,7 +62814,7 @@
 	        // Time to actually perform the action
 	        props.moveCard(dragIndex, hoverIndex);
 
-	        // Note: we're mutating the monitor item here!
+	        // Note: mutating the monitor item here!
 	        // Generally it's better to avoid mutations,
 	        // but it's good here for the sake of performance
 	        // to avoid expensive index searches.
@@ -62838,13 +62881,137 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+
+	var _getPrototypeOf = __webpack_require__(181);
+
+	var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
+
+	var _classCallCheck2 = __webpack_require__(207);
+
+	var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+	var _createClass2 = __webpack_require__(208);
+
+	var _createClass3 = _interopRequireDefault(_createClass2);
+
+	var _possibleConstructorReturn2 = __webpack_require__(212);
+
+	var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
+
+	var _inherits2 = __webpack_require__(255);
+
+	var _inherits3 = _interopRequireDefault(_inherits2);
+
+	var _react = __webpack_require__(4);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _reactBootstrap = __webpack_require__(263);
+
+	var _lodash = __webpack_require__(512);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
+	var _DndContainer = __webpack_require__(516);
+
+	var _DndContainer2 = _interopRequireDefault(_DndContainer);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var HierContainer = function (_React$Component) {
+	    (0, _inherits3.default)(HierContainer, _React$Component);
+
+	    function HierContainer(props) {
+	        (0, _classCallCheck3.default)(this, HierContainer);
+
+	        var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(HierContainer).call(this, props));
+
+	        _this.onChange = _this.onChange.bind(_this);
+	        return _this;
+	    }
+
+	    (0, _createClass3.default)(HierContainer, [{
+	        key: 'componentWillMount',
+	        value: function componentWillMount() {
+	            var _props = this.props;
+	            var allHier = _props.allHier;
+	            var selectedHier = _props.selectedHier;
+
+	            var selectList = {};
+	            for (var i = 0; i < allHier.length; i = i + 1) {
+	                var hier = allHier[i];
+	                var selected = _lodash2.default.includes(selectedHier, hier['value']);
+	                selectList[allHier[i].value] = selected;
+	            }
+
+	            this.setState({
+	                selectedHier: selectList
+	            });
+	        }
+	    }, {
+	        key: 'onChange',
+	        value: function onChange(e) {
+	            var newSelectedHier = _lodash2.default.assign({}, this.state.selectedHier);
+	            newSelectedHier[e.target.value] = true;
+	            this.setState({
+	                selectedHier: newSelectedHier
+	            });
+	        }
+	    }, {
+	        key: 'render',
+	        value: function render() {
+
+	            var allHier = this.props.allHier;
+	            var selectedHier = this.state.selectedHier;
+	            var options = allHier.map(function (item, i) {
+	                return _react2.default.createElement(
+	                    'option',
+	                    {
+	                        key: i,
+	                        value: item.value },
+	                    ' ',
+	                    item.text
+	                );
+	            });
+
+	            return _react2.default.createElement(
+	                'div',
+	                null,
+	                _react2.default.createElement(
+	                    _reactBootstrap.Input,
+	                    {
+	                        type: 'select',
+	                        label: 'Select Hierachy',
+	                        onChange: this.onChange,
+	                        multiple: true },
+	                    options
+	                ),
+	                _react2.default.createElement(_DndContainer2.default, { cards: selectedHier })
+	            );
+	        }
+	    }]);
+	    return HierContainer;
+	}(_react2.default.Component);
+
+	exports.default = HierContainer;
+	module.exports = exports['default'];
+
+/***/ },
+/* 713 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
 	exports.fetchData = exports.editCell = exports.buildVTree = undefined;
 
 	var _Constants = __webpack_require__(508);
 
-	var _ViewUtil = __webpack_require__(713);
+	var _ViewUtil = __webpack_require__(714);
 
-	var _FetchUtil = __webpack_require__(714);
+	var _FetchUtil = __webpack_require__(715);
 
 	var _lodash = __webpack_require__(512);
 
@@ -62895,7 +63062,7 @@
 	exports.fetchData = fetchData;
 
 /***/ },
-/* 713 */
+/* 714 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63024,7 +63191,7 @@
 	exports.createTree = createTree;
 
 /***/ },
-/* 714 */
+/* 715 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63056,7 +63223,7 @@
 	exports.receiveData = receiveData;
 
 /***/ },
-/* 715 */
+/* 716 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63067,11 +63234,11 @@
 
 	var _redux = __webpack_require__(164);
 
-	var _reduxThunk = __webpack_require__(716);
+	var _reduxThunk = __webpack_require__(717);
 
 	var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
 
-	var _GridReducers = __webpack_require__(717);
+	var _GridReducers = __webpack_require__(718);
 
 	var _GridReducers2 = _interopRequireDefault(_GridReducers);
 
@@ -63087,7 +63254,7 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 716 */
+/* 717 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -63106,7 +63273,7 @@
 	module.exports = thunkMiddleware;
 
 /***/ },
-/* 717 */
+/* 718 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63115,7 +63282,7 @@
 	    value: true
 	});
 
-	var _defineProperty2 = __webpack_require__(718);
+	var _defineProperty2 = __webpack_require__(719);
 
 	var _defineProperty3 = _interopRequireDefault(_defineProperty2);
 
@@ -63125,7 +63292,7 @@
 
 	var _Constants = __webpack_require__(508);
 
-	var _ReduceUtil = __webpack_require__(719);
+	var _ReduceUtil = __webpack_require__(720);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -63182,7 +63349,7 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 718 */
+/* 719 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -63211,7 +63378,7 @@
 	};
 
 /***/ },
-/* 719 */
+/* 720 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';

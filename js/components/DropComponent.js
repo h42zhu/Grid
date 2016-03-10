@@ -7,21 +7,18 @@ import { ITEMTYPES } from '../constants/Constants'
 const cardSource = {
     beginDrag(props) {
         return {
-          id: props.id,
-          index: props.index
+            id: props.id,
+            index: props.index
         }
-    }
-
-/*
+    },
     endDrag(props, monitor) {
-        const { id: droppedId, originalIndex } = monitor.getItem();
-        const didDrop = monitor.didDrop();
+        const { id: droppedId, originalIndex } = monitor.getItem()
+        const didDrop = monitor.didDrop()
 
         if (!didDrop) {
             props.moveCard(droppedId, originalIndex);
         }
     }
-*/
 }
 
 const cardTarget = {
@@ -35,16 +32,16 @@ const cardTarget = {
         }
 
         // Determine rectangle on screen
-        const hoverBoundingRect = findDOMNode(component).getBoundingClientRect();
+        const hoverBoundingRect = findDOMNode(component).getBoundingClientRect()
 
         // Get vertical middle
-        const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+        const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
 
         // Determine mouse position
-        const clientOffset = monitor.getClientOffset();
+        const clientOffset = monitor.getClientOffset()
 
         // Get pixels to the top
-        const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+        const hoverClientY = clientOffset.y - hoverBoundingRect.top
 
         // Only perform the move when the mouse has crossed half of the items height
         // When dragging downwards, only move when the cursor is below 50%
@@ -52,18 +49,18 @@ const cardTarget = {
 
         // Dragging downwards
         if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-          return;
+            return
         }
 
         // Dragging upwards
         if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-          return;
+            return
         }
 
         // Time to actually perform the action
         props.moveCard(dragIndex, hoverIndex);
 
-        // Note: we're mutating the monitor item here!
+        // Note: mutating the monitor item here!
         // Generally it's better to avoid mutations,
         // but it's good here for the sake of performance
         // to avoid expensive index searches.

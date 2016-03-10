@@ -1,6 +1,6 @@
 import React from 'react'
 import _ from 'lodash'
-import { Button, Input } from 'react-bootstrap';
+import { Button, Input } from 'react-bootstrap'
 
 
 class FilterListComponent extends React.Component {

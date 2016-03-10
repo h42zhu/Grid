@@ -33,4 +33,12 @@ const ITEMTYPES = {
     CARD: "CARD"
 }
 
-export {ACTIONS, COLMAP, DEFSTYLE, COMPREFS, ITEMTYPES}
+
+const ALLHEIRARCHY = [
+    {value: "security_class", text: "Security Value"},
+    {value: "asset_class", text: "Asset Value"},
+    {value: "region", text: "Region"},
+    {value: "market_cap", text: "Market Cap"},
+]
+
+export {ACTIONS, COLMAP, DEFSTYLE, COMPREFS, ITEMTYPES, ALLHEIRARCHY}
