@@ -1,18 +1,28 @@
 import React from 'react'
 import update from 'react/lib/update'
-import { DragDropContext } from 'react-dnd'
+import { DragDropContext, DropTarget } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
+import _ from 'lodash'
 
 import DropCard from './DropComponent'
-import { ALLHEIRARCHY } from '../constants/Constants'
+import { ALLHEIRARCHY, ITEMTYPES } from '../constants/Constants'
+
+
+const cardTarget = {
+    drop() {result: "success"}
+}
 
 @DragDropContext(HTML5Backend)
+@DropTarget(ITEMTYPES.CARD, cardTarget, connect => ({
+    connectDropTarget: connect.dropTarget()
+}))
 class DndContainer extends React.Component {
 
     constructor(props) {
         super(props)
         this.moveCard = this.moveCard.bind(this)
         this.updateCards = this.updateCards.bind(this)
+        this.findCard = this.findCard.bind(this)
         this.removeCard = this.removeCard.bind(this)
     }
 
@@ -40,23 +50,33 @@ class DndContainer extends React.Component {
         this.updateCards(cards)
     }
 
-    moveCard(dragIndex, hoverIndex) {
-        const cards = this.state.cards
-        const dragCard = cards[dragIndex]
-
+    moveCard(id, atIndex) {
+        const { card, index } = this.findCard(id)
         this.setState(update(this.state, {
-            cards: {
-                $splice: [
-                    [dragIndex, 1],
-                    [hoverIndex, 0, dragCard]
-                ]
-            }
-          }))
+        cards: {
+            $splice: [
+                [index, 1],
+                [atIndex, 0, card]
+            ]
+        }
+        }));
     }
 
-    removeCard(value) {
+    removeCard(id) {
+        let cards = this.state.cards.slice(0)
+        let idx = _.findIndex(cards, item=>item['id'] == id)
+        cards = _.without(cards, cards[idx])
+        this.setState({cards: cards})
+    }
+
+    findCard(id) {
         const cards = this.state.cards
-        let idx = _.findIndex(cards, item => item['value'] == value)
+        const card = cards.filter(c => c.id === id)[0]
+
+        return {
+            card,
+            index: cards.indexOf(card)
+        }
     }
 
     render() {
@@ -73,13 +93,15 @@ class DndContainer extends React.Component {
             <div style={style}>
               {cards.map((card, i) => {
                 return (
-                  <DropCard
-                        key={i}
-                        index={i}
-                        id={i}
+                    <DropCard
+                        key={card.id}
+                        id={card.id}
                         value={card.value}
                         text={card.text}
-                        moveCard={this.moveCard} />
+                        moveCard={this.moveCard}
+                        findCard={this.findCard}
+                        removeCard={this.removeCard}
+                    />
                 )
               })}
             </div>

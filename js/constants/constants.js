@@ -35,10 +35,10 @@ const ITEMTYPES = {
 
 
 const ALLHEIRARCHY = [
-    {value: "security_class", text: "Security Value"},
-    {value: "asset_class", text: "Asset Value"},
-    {value: "region", text: "Region"},
-    {value: "market_cap", text: "Market Cap"},
+    {id: 0, value: "security_class", text: "Security Value"},
+    {id: 1, value: "asset_class", text: "Asset Value"},
+    {id: 2, value: "region", text: "Region"},
+    {id: 3, value: "market_cap", text: "Market Cap"},
 ]
 
 export {ACTIONS, COLMAP, DEFSTYLE, COMPREFS, ITEMTYPES, ALLHEIRARCHY}
