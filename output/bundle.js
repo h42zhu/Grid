@@ -39901,7 +39901,7 @@
 	        uid: rowMeta.uid,
 	        data: rowMeta.label,
 	        meta: { editable: false },
-	        style: { width: 220, height: 25 }
+	        style: { width: 240, height: 25, paddingLeft: rowMeta.indent * 10 }
 	    }];
 	    var i, j, idx;
 
@@ -39990,19 +39990,20 @@
 	            superHeader = meta.portlist.filter(function (item) {
 	                return _.includes(portlist, item['port_id']);
 	            });
-	            rowMeta = { type: 'superheader', uid: 'superheader', label: "" };
+	            rowMeta = { type: 'superheader', uid: 'superheader', label: "", indent: 0 };
 	            rows.push(RowPopulate(rowMeta, portlist, cols, superHeader));
 
-	            rowMeta = { type: 'header', uid: 'header', label: meta.current_date };
+	            rowMeta = { type: 'header', uid: 'header', label: meta.current_date, indent: 0 };
 	            rows.push(RowPopulate(rowMeta, portlist, cols));
 	            return rows;
 	        }
 	    }, {
 	        key: 'recursiveRender',
 	        value: function recursiveRender(vtree, portlist, cols) {
-	            var position = arguments.length <= 3 || arguments[3] === undefined ? [] : arguments[3];
-	            var action = arguments.length <= 4 || arguments[4] === undefined ? null : arguments[4];
-	            var disp = arguments.length <= 5 || arguments[5] === undefined ? 2 : arguments[5];
+	            var indent = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
+	            var position = arguments.length <= 4 || arguments[4] === undefined ? [] : arguments[4];
+	            var action = arguments.length <= 5 || arguments[5] === undefined ? null : arguments[5];
+	            var disp = arguments.length <= 6 || arguments[6] === undefined ? 2 : arguments[6];
 
 	            var rows = [],
 	                i,
@@ -40010,16 +40011,18 @@
 
 	            if (vtree.children) {
 	                if (vtree.label !== "") {
-	                    rowMeta = { type: 'label', uid: vtree.uid, label: vtree.label };
+	                    rowMeta = { type: 'label', uid: vtree.uid, label: vtree.label, indent: indent };
 	                    rows.push(RowPopulate(rowMeta, portlist, cols));
 	                }
 	                for (i = 0; i < vtree.children.length; i = i + 1) {
-	                    rows = rows.concat(this.recursiveRender(vtree.children[i], portlist, cols, position.concat([i]), action));
+	                    rows = rows.concat(this.recursiveRender(vtree.children[i], portlist, cols, indent + 1, position.concat([i]), action));
 	                }
-	                rowMeta = { type: 'total', uid: 'total_' + vtree.uid, label: 'Total ' + vtree.label };
+	                rowMeta = { type: 'total', uid: 'total_' + vtree.uid,
+	                    label: 'Total ' + vtree.label, indent: indent };
 	                rows.push(RowPopulate(rowMeta, portlist, cols, vtree.total, null, disp));
 	            } else if (vtree.rowdata) {
-	                rowMeta = { type: 'data', uid: vtree.uid, label: vtree.label, hier: position };
+	                rowMeta = { type: 'data', uid: vtree.uid, label: vtree.label,
+	                    hier: position, indent: indent };
 	                rows.push(RowPopulate(rowMeta, portlist, cols, vtree.rowdata, action, disp));
 	            }
 	            return rows;
@@ -40071,7 +40074,7 @@
 	                headerRows = [];
 	            var disp = dispMode == "percentage" ? 2 : 0;
 	            if (!isFetching && portlist.length > 0 && !_.isEmpty(vtree)) {
-	                dataRows = this.recursiveRender(vtree, portlist, cols, [], editCellAction, disp);
+	                dataRows = this.recursiveRender(vtree, portlist, cols, 0, [], editCellAction, disp);
 	                headerRows = this.headersRender(meta, portlist, cols);
 	            }
 
@@ -53423,19 +53426,8 @@
 	    }, {
 	        key: 'updateCards',
 	        value: function updateCards(cards) {
-	            var cardlist = [],
-	                idx;
-	            for (var key in cards) {
-	                if (cards[key]) {
-	                    idx = _lodash2.default.findIndex(_Constants.ALLHEIRARCHY, function (item) {
-	                        return item['value'] == key;
-	                    });
-	                    cardlist.push(_Constants.ALLHEIRARCHY[idx]);
-	                }
-	            }
-
 	            this.setState({
-	                cards: cardlist
+	                cards: cards
 	            });
 	        }
 	    }, {
@@ -53468,10 +53460,10 @@
 	                });
 	                var val = cards[idx].value;
 	                cards = _lodash2.default.without(cards, cards[idx]);
-	                this.props.onRemove(val, cards);
+	                this.props.onUpdate(cards);
 	                this.setState({ cards: cards });
 	            } else {
-	                this.props.onReorder(cards);
+	                this.props.onUpdate(cards);
 	            }
 	        }
 	    }, {
@@ -62964,8 +62956,7 @@
 	        var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(HierContainer).call(this, props));
 
 	        _this.onChange = _this.onChange.bind(_this);
-	        _this.onRemove = _this.onRemove.bind(_this);
-	        _this.onReorder = _this.onReorder.bind(_this);
+	        _this.onUpdate = _this.onUpdate.bind(_this);
 	        return _this;
 	    }
 
@@ -62976,49 +62967,36 @@
 	            var allHier = _props.allHier;
 	            var selectedHier = _props.selectedHier;
 
-	            var selectList = {};
-	            for (var i = 0; i < allHier.length; i = i + 1) {
-	                var hier = allHier[i];
-	                var selected = _lodash2.default.includes(selectedHier, hier['value']);
-	                selectList[allHier[i].value] = selected;
-	            }
 
-	            this.setState({
-	                selectedHier: selectList,
-	                orderedSelectedHier: selectedHier
+	            var orderedSelectedList = selectedHier.map(function (item) {
+	                return _lodash2.default.filter(allHier, 'value', item)[0];
 	            });
-	        }
-	    }, {
-	        key: 'shouldComponentUpdate',
-	        value: function shouldComponentUpdate(nextProps, nextState) {
-	            if (this.state.orderedSelectedHier != nextState.orderedSelectedHier) {
-	                return false;
-	            }
-	            return true;
+	            this.setState({
+	                orderedSelectedHier: orderedSelectedList
+	            });
 	        }
 	    }, {
 	        key: 'onChange',
 	        value: function onChange(e) {
-	            var newSelectedHier = _lodash2.default.assign({}, this.state.selectedHier);
-	            newSelectedHier[e.target.value] = true;
-	            this.setState({
-	                selectedHier: newSelectedHier
+	            var newOrderedSelectedHier = this.state.orderedSelectedHier.slice(0);
+	            var idx = _lodash2.default.findIndex(newOrderedSelectedHier, function (item) {
+	                return item['value'] == e.target.value;
 	            });
+	            if (idx < 0) {
+	                var allHier = this.props.allHier;
+	                idx = _lodash2.default.findIndex(allHier, function (item) {
+	                    return item['value'] == e.target.value;
+	                });
+	                newOrderedSelectedHier.push(allHier[idx]);
+	                this.setState({
+	                    orderedSelectedHier: newOrderedSelectedHier
+	                });
+	            }
 	        }
 	    }, {
-	        key: 'onReorder',
-	        value: function onReorder(newList) {
+	        key: 'onUpdate',
+	        value: function onUpdate(newList) {
 	            this.setState({
-	                orderedSelectedHier: newList
-	            });
-	        }
-	    }, {
-	        key: 'onRemove',
-	        value: function onRemove(value, newList) {
-	            var newSelectedHier = _lodash2.default.assign({}, this.state.selectedHier);
-	            newSelectedHier[value] = false;
-	            this.setState({
-	                selectedHier: newSelectedHier,
 	                orderedSelectedHier: newList
 	            });
 	        }
@@ -63027,7 +63005,7 @@
 	        value: function render() {
 
 	            var allHier = this.props.allHier;
-	            var selectedHier = this.state.selectedHier;
+	            var orderedSelectedHier = this.state.orderedSelectedHier;
 	            var options = allHier.map(function (item, i) {
 	                return _react2.default.createElement(
 	                    'option',
@@ -63052,9 +63030,8 @@
 	                    options
 	                ),
 	                _react2.default.createElement(_DndContainer2.default, {
-	                    cards: selectedHier,
-	                    onRemove: this.onRemove,
-	                    onReorder: this.onReorder
+	                    cards: orderedSelectedHier,
+	                    onUpdate: this.onUpdate
 	                })
 	            );
 	        }

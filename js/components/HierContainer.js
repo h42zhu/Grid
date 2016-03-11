@@ -9,51 +9,36 @@ class HierContainer extends React.Component {
     constructor(props) {
         super(props)
         this.onChange = this.onChange.bind(this)
-        this.onRemove = this.onRemove.bind(this)
-        this.onReorder = this.onReorder.bind(this)
+        this.onUpdate = this.onUpdate.bind(this)
     }
 
     componentWillMount () {
         const {allHier, selectedHier} = this.props
-        let selectList = {}
-        for (var i=0; i<allHier.length; i=i+1) {
-            let hier = allHier[i]
-            let selected = _.includes(selectedHier, hier['value'])
-            selectList[allHier[i].value] = selected
-        }
 
+        let orderedSelectedList = selectedHier.map(
+            item => _.filter(allHier, 'value', item)[0]
+        )
         this.setState({
-            selectedHier: selectList,
-            orderedSelectedHier: selectedHier
+            orderedSelectedHier: orderedSelectedList
         })
-    }
-
-    shouldComponentUpdate(nextProps, nextState) {
-        if (this.state.orderedSelectedHier != nextState.orderedSelectedHier) {
-            return false
-        }
-        return true
     }
 
     onChange (e) {
-        let newSelectedHier = _.assign({}, this.state.selectedHier)
-        newSelectedHier[e.target.value] = true
-        this.setState({
-            selectedHier: newSelectedHier
-        })
+        let newOrderedSelectedHier = this.state.orderedSelectedHier.slice(0)
+        let idx = _.findIndex(newOrderedSelectedHier,
+                item=>item['value']==e.target.value)
+        if (idx < 0) {
+            let allHier = this.props.allHier
+            idx = _.findIndex(allHier, item=>item['value']==e.target.value)
+            newOrderedSelectedHier.push(allHier[idx])
+            this.setState({
+                orderedSelectedHier: newOrderedSelectedHier
+            })
+        }
     }
 
-    onReorder (newList) {
+    onUpdate (newList) {
         this.setState({
-            orderedSelectedHier: newList
-        })
-    }
-
-    onRemove (value, newList) {
-        let newSelectedHier = _.assign({}, this.state.selectedHier)
-        newSelectedHier[value] = false
-        this.setState({
-            selectedHier: newSelectedHier,
             orderedSelectedHier: newList
         })
     }
@@ -61,7 +46,7 @@ class HierContainer extends React.Component {
     render () {
 
         const allHier = this.props.allHier
-        const selectedHier = this.state.selectedHier
+        const orderedSelectedHier = this.state.orderedSelectedHier
         let options = allHier.map((item, i) =>
             (<option
                 key={i}
@@ -80,9 +65,8 @@ class HierContainer extends React.Component {
 
                 </Input>
                 <DndContainer
-                    cards={selectedHier}
-                    onRemove={this.onRemove}
-                    onReorder={this.onReorder}
+                    cards={orderedSelectedHier}
+                    onUpdate={this.onUpdate}
                 />
             </div>
         )

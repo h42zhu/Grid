@@ -37,16 +37,8 @@ class DndContainer extends React.Component {
     }
 
     updateCards(cards) {
-        var cardlist = [], idx
-        for (var key in cards) {
-            if (cards[key]) {
-                idx = _.findIndex(ALLHEIRARCHY, item => item['value'] == key)
-                cardlist.push(ALLHEIRARCHY[idx])
-            }
-        }
-
         this.setState({
-            cards: cardlist
+            cards: cards
         })
     }
 
@@ -69,17 +61,17 @@ class DndContainer extends React.Component {
         let bottomRight = {x: dndDomNode.offsetLeft + dndDomNode.offsetWidth,
                         y: dndDomNode.offsetTop + dndDomNode.offsetHeight}
 
-        if (Math.abs(offset.x) > dndDomNode.offsetWidth || Math.abs(offset.y) > dndDomNode.offsetHeight) {
+        if (Math.abs(offset.x) > dndDomNode.offsetWidth ||
+            Math.abs(offset.y) > dndDomNode.offsetHeight) {
 
             let idx = _.findIndex(cards, item=>item['id'] == id)
             let val = cards[idx].value
             cards = _.without(cards, cards[idx])
-            this.props.onRemove(val, cards)
+            this.props.onUpdate(cards)
             this.setState({cards: cards})
         } else {
-            this.props.onReorder(cards)
+            this.props.onUpdate(cards)
         }
-
 
     }
 
