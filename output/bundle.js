@@ -40142,7 +40142,8 @@
 	};
 
 	var COMPREFS = {
-	    TOGGLEPORTFOLIO: "TOGGLEPORTFOLIO"
+	    TOGGLEPORTFOLIO: "TOGGLEPORTFOLIO",
+	    HIERARCHY: "HIERARCHY"
 	};
 
 	var ITEMTYPES = {
@@ -40150,7 +40151,7 @@
 	    CARD: "CARD"
 	};
 
-	var ALLHEIRARCHY = [{ value: "security_class", text: "Security Value" }, { value: "asset_class", text: "Asset Value" }, { value: "region", text: "Region" }, { value: "market_cap", text: "Market Cap" }];
+	var ALLHEIRARCHY = [{ id: 0, value: "security_class", text: "Security Class" }, { id: 1, value: "asset_class", text: "Asset Class" }, { id: 2, value: "region", text: "Region" }, { id: 3, value: "market_cap", text: "Market Cap" }];
 
 	exports.ACTIONS = ACTIONS;
 	exports.COLMAP = COLMAP;
@@ -53018,18 +53019,33 @@
 	    }, {
 	        key: 'onRefreshConfigGrid',
 	        value: function onRefreshConfigGrid() {
+	            var _props2 = this.props;
+	            var data = _props2.data;
+	            var dispMode = _props2.dispMode;
+	            var portlist = _props2.portlist;
+	            var hier = _props2.hier;
+	            var cols = _props2.cols;
+	            var actions = _props2.actions;
+
+	            var hierSelected = this.refs[_Constants.COMPREFS.HIERARCHY].state.orderedSelectedHier;
 	            this.setState({
 	                showConfigGrid: false
 	            });
+
+	            var newHier = hierSelected.map(function (item) {
+	                return item.value;
+	            });
+	            var newCols = cols;
+	            actions.buildVTree(data, portlist, newHier, newCols, dispMode);
 	        }
 	    }, {
 	        key: 'render',
 	        value: function render() {
-	            var _props2 = this.props;
-	            var portlist = _props2.portlist;
-	            var cols = _props2.cols;
-	            var meta = _props2.meta;
-	            var hier = _props2.hier;
+	            var _props3 = this.props;
+	            var portlist = _props3.portlist;
+	            var cols = _props3.cols;
+	            var meta = _props3.meta;
+	            var hier = _props3.hier;
 
 	            return _react2.default.createElement(
 	                'div',
@@ -53108,6 +53124,7 @@
 	                                _reactBootstrap.Panel,
 	                                { header: 'Hierarchy', eventKey: '1' },
 	                                _react2.default.createElement(_HierContainer2.default, {
+	                                    ref: _Constants.COMPREFS.HIERARCHY,
 	                                    allHier: _Constants.ALLHEIRARCHY,
 	                                    selectedHier: hier
 	                                })
@@ -53338,7 +53355,7 @@
 
 	var _inherits3 = _interopRequireDefault(_inherits2);
 
-	var _dec, _class;
+	var _dec, _dec2, _class;
 
 	var _react = __webpack_require__(4);
 
@@ -53354,6 +53371,10 @@
 
 	var _reactDndHtml5Backend2 = _interopRequireDefault(_reactDndHtml5Backend);
 
+	var _lodash = __webpack_require__(512);
+
+	var _lodash2 = _interopRequireDefault(_lodash);
+
 	var _DropComponent = __webpack_require__(711);
 
 	var _DropComponent2 = _interopRequireDefault(_DropComponent);
@@ -53362,7 +53383,17 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var DndContainer = (_dec = (0, _reactDnd.DragDropContext)(_reactDndHtml5Backend2.default), _dec(_class = function (_React$Component) {
+	var cardTarget = {
+	    drop: function drop() {
+	        result: "success";
+	    }
+	};
+
+	var DndContainer = (_dec = (0, _reactDnd.DragDropContext)(_reactDndHtml5Backend2.default), _dec2 = (0, _reactDnd.DropTarget)(_Constants.ITEMTYPES.CARD, cardTarget, function (connect) {
+	    return {
+	        connectDropTarget: connect.dropTarget()
+	    };
+	}), _dec(_class = _dec2(_class = function (_React$Component) {
 	    (0, _inherits3.default)(DndContainer, _React$Component);
 
 	    function DndContainer(props) {
@@ -53372,29 +53403,12 @@
 
 	        _this.moveCard = _this.moveCard.bind(_this);
 	        _this.updateCards = _this.updateCards.bind(_this);
+	        _this.findCard = _this.findCard.bind(_this);
 	        _this.removeCard = _this.removeCard.bind(_this);
 	        return _this;
 	    }
 
 	    (0, _createClass3.default)(DndContainer, [{
-	        key: 'updateCards',
-	        value: function updateCards(cards) {
-	            var cardlist = [],
-	                idx;
-	            for (var key in cards) {
-	                if (cards[key]) {
-	                    idx = _.findIndex(_Constants.ALLHEIRARCHY, function (item) {
-	                        return item['value'] == key;
-	                    });
-	                    cardlist.push(_Constants.ALLHEIRARCHY[idx]);
-	                }
-	            }
-
-	            this.setState({
-	                cards: cardlist
-	            });
-	        }
-	    }, {
 	        key: 'componentWillMount',
 	        value: function componentWillMount() {
 	            var cards = this.props.cards;
@@ -53407,24 +53421,71 @@
 	            this.updateCards(cards);
 	        }
 	    }, {
+	        key: 'updateCards',
+	        value: function updateCards(cards) {
+	            var cardlist = [],
+	                idx;
+	            for (var key in cards) {
+	                if (cards[key]) {
+	                    idx = _lodash2.default.findIndex(_Constants.ALLHEIRARCHY, function (item) {
+	                        return item['value'] == key;
+	                    });
+	                    cardlist.push(_Constants.ALLHEIRARCHY[idx]);
+	                }
+	            }
+
+	            this.setState({
+	                cards: cardlist
+	            });
+	        }
+	    }, {
 	        key: 'moveCard',
-	        value: function moveCard(dragIndex, hoverIndex) {
-	            var cards = this.state.cards;
-	            var dragCard = cards[dragIndex];
+	        value: function moveCard(id, atIndex) {
+	            var _findCard = this.findCard(id);
+
+	            var card = _findCard.card;
+	            var index = _findCard.index;
 
 	            this.setState((0, _update2.default)(this.state, {
 	                cards: {
-	                    $splice: [[dragIndex, 1], [hoverIndex, 0, dragCard]]
+	                    $splice: [[index, 1], [atIndex, 0, card]]
 	                }
 	            }));
 	        }
 	    }, {
 	        key: 'removeCard',
-	        value: function removeCard(value) {
+	        value: function removeCard(id, offset) {
+	            var dndDomNode = this.refs["DnDContainer"];
+	            var cards = this.state.cards.slice(0);
+	            var topLeft = { x: dndDomNode.offsetLeft, y: dndDomNode.offsetTop };
+	            var bottomRight = { x: dndDomNode.offsetLeft + dndDomNode.offsetWidth,
+	                y: dndDomNode.offsetTop + dndDomNode.offsetHeight };
+
+	            if (Math.abs(offset.x) > dndDomNode.offsetWidth || Math.abs(offset.y) > dndDomNode.offsetHeight) {
+
+	                var idx = _lodash2.default.findIndex(cards, function (item) {
+	                    return item['id'] == id;
+	                });
+	                var val = cards[idx].value;
+	                cards = _lodash2.default.without(cards, cards[idx]);
+	                this.props.onRemove(val, cards);
+	                this.setState({ cards: cards });
+	            } else {
+	                this.props.onReorder(cards);
+	            }
+	        }
+	    }, {
+	        key: 'findCard',
+	        value: function findCard(id) {
 	            var cards = this.state.cards;
-	            var idx = _.findIndex(cards, function (item) {
-	                return item['value'] == value;
-	            });
+	            var card = cards.filter(function (c) {
+	                return c.id === id;
+	            })[0];
+
+	            return {
+	                card: card,
+	                index: cards.indexOf(card)
+	            };
 	        }
 	    }, {
 	        key: 'render',
@@ -53442,21 +53503,23 @@
 	            };
 	            return _react2.default.createElement(
 	                'div',
-	                { style: style },
+	                { style: style, ref: 'DnDContainer' },
 	                cards.map(function (card, i) {
 	                    return _react2.default.createElement(_DropComponent2.default, {
-	                        key: i,
-	                        index: i,
-	                        id: i,
+	                        key: card.id,
+	                        id: card.id,
 	                        value: card.value,
 	                        text: card.text,
-	                        moveCard: _this2.moveCard });
+	                        moveCard: _this2.moveCard,
+	                        findCard: _this2.findCard,
+	                        removeCard: _this2.removeCard
+	                    });
 	                })
 	            );
 	        }
 	    }]);
 	    return DndContainer;
-	}(_react2.default.Component)) || _class);
+	}(_react2.default.Component)) || _class) || _class);
 	exports.default = DndContainer;
 	module.exports = exports['default'];
 
@@ -62758,7 +62821,7 @@
 	    beginDrag: function beginDrag(props) {
 	        return {
 	            id: props.id,
-	            index: props.index
+	            value: props.value
 	        };
 	    },
 	    endDrag: function endDrag(props, monitor) {
@@ -62768,57 +62831,31 @@
 	        var originalIndex = _monitor$getItem.originalIndex;
 
 	        var didDrop = monitor.didDrop();
-
+	        var offset = monitor.getDifferenceFromInitialOffset();
 	        if (!didDrop) {
-	            props.moveCard(droppedId, originalIndex);
+	            props.removeCard(monitor.getItem().id, offset);
 	        }
 	    }
 	};
 
 	var cardTarget = {
-	    hover: function hover(props, monitor, component) {
-	        var dragIndex = monitor.getItem().index;
-	        var hoverIndex = props.index;
+	    canDrop: function canDrop() {
+	        return false;
+	    },
+	    hover: function hover(props, monitor) {
+	        var _monitor$getItem2 = monitor.getItem();
 
-	        // Don't replace items with themselves
-	        if (dragIndex === hoverIndex) {
-	            return;
+	        var draggedId = _monitor$getItem2.id;
+	        var overId = props.id;
+
+
+	        if (draggedId !== overId) {
+	            var _props$findCard = props.findCard(overId);
+
+	            var overIndex = _props$findCard.index;
+
+	            props.moveCard(draggedId, overIndex);
 	        }
-
-	        // Determine rectangle on screen
-	        var hoverBoundingRect = (0, _reactDom.findDOMNode)(component).getBoundingClientRect();
-
-	        // Get vertical middle
-	        var hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-
-	        // Determine mouse position
-	        var clientOffset = monitor.getClientOffset();
-
-	        // Get pixels to the top
-	        var hoverClientY = clientOffset.y - hoverBoundingRect.top;
-
-	        // Only perform the move when the mouse has crossed half of the items height
-	        // When dragging downwards, only move when the cursor is below 50%
-	        // When dragging upwards, only move when the cursor is above 50%
-
-	        // Dragging downwards
-	        if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-	            return;
-	        }
-
-	        // Dragging upwards
-	        if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-	            return;
-	        }
-
-	        // Time to actually perform the action
-	        props.moveCard(dragIndex, hoverIndex);
-
-	        // Note: mutating the monitor item here!
-	        // Generally it's better to avoid mutations,
-	        // but it's good here for the sake of performance
-	        // to avoid expensive index searches.
-	        monitor.getItem().index = hoverIndex;
 	    }
 	};
 
@@ -62927,6 +62964,8 @@
 	        var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(HierContainer).call(this, props));
 
 	        _this.onChange = _this.onChange.bind(_this);
+	        _this.onRemove = _this.onRemove.bind(_this);
+	        _this.onReorder = _this.onReorder.bind(_this);
 	        return _this;
 	    }
 
@@ -62945,8 +62984,17 @@
 	            }
 
 	            this.setState({
-	                selectedHier: selectList
+	                selectedHier: selectList,
+	                orderedSelectedHier: selectedHier
 	            });
+	        }
+	    }, {
+	        key: 'shouldComponentUpdate',
+	        value: function shouldComponentUpdate(nextProps, nextState) {
+	            if (this.state.orderedSelectedHier != nextState.orderedSelectedHier) {
+	                return false;
+	            }
+	            return true;
 	        }
 	    }, {
 	        key: 'onChange',
@@ -62955,6 +63003,23 @@
 	            newSelectedHier[e.target.value] = true;
 	            this.setState({
 	                selectedHier: newSelectedHier
+	            });
+	        }
+	    }, {
+	        key: 'onReorder',
+	        value: function onReorder(newList) {
+	            this.setState({
+	                orderedSelectedHier: newList
+	            });
+	        }
+	    }, {
+	        key: 'onRemove',
+	        value: function onRemove(value, newList) {
+	            var newSelectedHier = _lodash2.default.assign({}, this.state.selectedHier);
+	            newSelectedHier[value] = false;
+	            this.setState({
+	                selectedHier: newSelectedHier,
+	                orderedSelectedHier: newList
 	            });
 	        }
 	    }, {
@@ -62986,7 +63051,11 @@
 	                        multiple: true },
 	                    options
 	                ),
-	                _react2.default.createElement(_DndContainer2.default, { cards: selectedHier })
+	                _react2.default.createElement(_DndContainer2.default, {
+	                    cards: selectedHier,
+	                    onRemove: this.onRemove,
+	                    onReorder: this.onReorder
+	                })
 	            );
 	        }
 	    }]);
@@ -63028,7 +63097,8 @@
 	        type: _Constants.ACTIONS.BUILDVTREE,
 	        portlist: portlist,
 	        hier: hier,
-	        vtree: (0, _ViewUtil.createTree)(fdata, portlist, hier, cols)
+	        vtree: (0, _ViewUtil.createTree)(fdata, portlist, hier, cols),
+	        cols: cols
 
 	    };
 	}
@@ -63398,11 +63468,13 @@
 	    var portlist = action.portlist;
 	    var hier = action.hier;
 	    var vtree = action.vtree;
+	    var cols = action.cols;
 
 	    var newState = _lodash2.default.assign({}, state);
 	    newState['grid']['vtree'] = vtree;
 	    newState['grid']['portlist'] = portlist;
 	    newState['panel']['heir'] = hier;
+	    newState['panel']['cols'] = cols;
 	    return newState;
 	}
 

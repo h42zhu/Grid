@@ -2,11 +2,12 @@
 import _ from 'lodash'
 
 function VtreeMerge (state, action) {
-    const {portlist, hier, vtree} = action
+    const {portlist, hier, vtree, cols} = action
     var newState = _.assign({}, state)
     newState['grid']['vtree'] = vtree
     newState['grid']['portlist'] = portlist
     newState['panel']['heir'] = hier
+    newState['panel']['cols'] = cols
     return newState
 }
 

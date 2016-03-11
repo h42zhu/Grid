@@ -26,6 +26,16 @@ class DndContainer extends React.Component {
         this.removeCard = this.removeCard.bind(this)
     }
 
+    componentWillMount () {
+        const cards = this.props.cards
+        this.updateCards(cards)
+    }
+
+    componentWillReceiveProps(nextProps) {
+        const cards = nextProps.cards
+        this.updateCards(cards)
+    }
+
     updateCards(cards) {
         var cardlist = [], idx
         for (var key in cards) {
@@ -40,16 +50,6 @@ class DndContainer extends React.Component {
         })
     }
 
-    componentWillMount () {
-        const cards = this.props.cards
-        this.updateCards(cards)
-    }
-
-    componentWillReceiveProps(nextProps) {
-        const cards = nextProps.cards
-        this.updateCards(cards)
-    }
-
     moveCard(id, atIndex) {
         const { card, index } = this.findCard(id)
         this.setState(update(this.state, {
@@ -62,11 +62,25 @@ class DndContainer extends React.Component {
         }));
     }
 
-    removeCard(id) {
+    removeCard(id, offset) {
+        let dndDomNode = this.refs["DnDContainer"]
         let cards = this.state.cards.slice(0)
-        let idx = _.findIndex(cards, item=>item['id'] == id)
-        cards = _.without(cards, cards[idx])
-        this.setState({cards: cards})
+        let topLeft = {x: dndDomNode.offsetLeft, y: dndDomNode.offsetTop}
+        let bottomRight = {x: dndDomNode.offsetLeft + dndDomNode.offsetWidth,
+                        y: dndDomNode.offsetTop + dndDomNode.offsetHeight}
+
+        if (Math.abs(offset.x) > dndDomNode.offsetWidth || Math.abs(offset.y) > dndDomNode.offsetHeight) {
+
+            let idx = _.findIndex(cards, item=>item['id'] == id)
+            let val = cards[idx].value
+            cards = _.without(cards, cards[idx])
+            this.props.onRemove(val, cards)
+            this.setState({cards: cards})
+        } else {
+            this.props.onReorder(cards)
+        }
+
+
     }
 
     findCard(id) {
@@ -90,7 +104,7 @@ class DndContainer extends React.Component {
             height: 300
         }
         return (
-            <div style={style}>
+            <div style={style} ref="DnDContainer">
               {cards.map((card, i) => {
                 return (
                     <DropCard

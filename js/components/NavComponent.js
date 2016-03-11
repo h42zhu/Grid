@@ -65,9 +65,15 @@ class NavComponent extends React.Component {
     }
 
     onRefreshConfigGrid () {
+        const {data, dispMode, portlist, hier, cols, actions} = this.props
+        let hierSelected = this.refs[COMPREFS.HIERARCHY].state.orderedSelectedHier
         this.setState({
             showConfigGrid: false
         })
+
+        let newHier = hierSelected.map(item=>item.value)
+        let newCols = cols
+        actions.buildVTree(data, portlist, newHier, newCols, dispMode)
     }
 
 
@@ -114,6 +120,7 @@ class NavComponent extends React.Component {
                         <Accordion>
                             <Panel header="Hierarchy" eventKey="1">
                                 <HierContainer
+                                    ref={COMPREFS.HIERARCHY}
                                     allHier={ALLHEIRARCHY}
                                     selectedHier={hier}
                                 />

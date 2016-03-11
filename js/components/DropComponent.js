@@ -8,15 +8,15 @@ const cardSource = {
     beginDrag(props) {
         return {
             id: props.id,
-            index: props.index
+            value: props.value
         }
     },
     endDrag(props, monitor) {
         const { id: droppedId, originalIndex } = monitor.getItem()
         const didDrop = monitor.didDrop()
-        const dropResult = monitor.getDropResult()
+        const offset = monitor.getDifferenceFromInitialOffset()
         if (!didDrop) {
-            //props.removeCard(monitor.getItem().id)
+            props.removeCard(monitor.getItem().id, offset)
         }
     }
 }

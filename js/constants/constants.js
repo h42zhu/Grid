@@ -25,7 +25,8 @@ const DEFSTYLE = {
 }
 
 const COMPREFS = {
-    TOGGLEPORTFOLIO: "TOGGLEPORTFOLIO"
+    TOGGLEPORTFOLIO: "TOGGLEPORTFOLIO",
+    HIERARCHY: "HIERARCHY"
 }
 
 const ITEMTYPES = {
@@ -35,8 +36,8 @@ const ITEMTYPES = {
 
 
 const ALLHEIRARCHY = [
-    {id: 0, value: "security_class", text: "Security Value"},
-    {id: 1, value: "asset_class", text: "Asset Value"},
+    {id: 0, value: "security_class", text: "Security Class"},
+    {id: 1, value: "asset_class", text: "Asset Class"},
     {id: 2, value: "region", text: "Region"},
     {id: 3, value: "market_cap", text: "Market Cap"},
 ]

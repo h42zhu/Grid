@@ -11,7 +11,8 @@ function buildVTree(data, portlist, hier, cols) {
         type: ACTIONS.BUILDVTREE,
         portlist: portlist,
         hier: hier,
-        vtree: createTree(fdata, portlist, hier, cols)
+        vtree: createTree(fdata, portlist, hier, cols),
+        cols: cols
 
     })
 

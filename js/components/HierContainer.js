@@ -3,11 +3,14 @@ import { Input } from 'react-bootstrap'
 import _ from 'lodash'
 import DndContainer from './DndContainer'
 
+
 class HierContainer extends React.Component {
 
     constructor(props) {
         super(props)
         this.onChange = this.onChange.bind(this)
+        this.onRemove = this.onRemove.bind(this)
+        this.onReorder = this.onReorder.bind(this)
     }
 
     componentWillMount () {
@@ -20,8 +23,16 @@ class HierContainer extends React.Component {
         }
 
         this.setState({
-            selectedHier: selectList
+            selectedHier: selectList,
+            orderedSelectedHier: selectedHier
         })
+    }
+
+    shouldComponentUpdate(nextProps, nextState) {
+        if (this.state.orderedSelectedHier != nextState.orderedSelectedHier) {
+            return false
+        }
+        return true
     }
 
     onChange (e) {
@@ -29,6 +40,21 @@ class HierContainer extends React.Component {
         newSelectedHier[e.target.value] = true
         this.setState({
             selectedHier: newSelectedHier
+        })
+    }
+
+    onReorder (newList) {
+        this.setState({
+            orderedSelectedHier: newList
+        })
+    }
+
+    onRemove (value, newList) {
+        let newSelectedHier = _.assign({}, this.state.selectedHier)
+        newSelectedHier[value] = false
+        this.setState({
+            selectedHier: newSelectedHier,
+            orderedSelectedHier: newList
         })
     }
 
@@ -53,7 +79,11 @@ class HierContainer extends React.Component {
                     {options}
 
                 </Input>
-                <DndContainer cards={selectedHier}/>
+                <DndContainer
+                    cards={selectedHier}
+                    onRemove={this.onRemove}
+                    onReorder={this.onReorder}
+                />
             </div>
         )
     }
