@@ -15,12 +15,16 @@ class NavComponent extends React.Component {
         this.closeConfigureGrid = this.closeConfigureGrid.bind(this)
         this.onRefreshPortlist = this.onRefreshPortlist.bind(this)
         this.onRefreshConfigGrid = this.onRefreshConfigGrid.bind(this)
+        this.onChangeDispMode = this.onChangeDispMode.bind(this)
     }
 
     componentWillMount () {
+        const dispMode = this.props.dispMode
+        let checked = (dispMode=='percentage')
         this.setState({
             showPortSelect: false,
             showConfigGrid: false,
+            showPercentage: checked
         })
     }
 
@@ -76,6 +80,18 @@ class NavComponent extends React.Component {
         actions.buildVTree(data, portlist, newHier, newCols, dispMode)
     }
 
+    onChangeDispMode () {
+        const actions = this.props.actions
+        let newDispMode = this.state.showPercentage ? 'dollar': 'percentage'
+
+        this.setState({
+            showPercentage: !this.state.showPercentage
+        })
+
+        actions.toggleDisp(newDispMode)
+
+    }
+
 
     render () {
         const {portlist, cols, meta, hier} = this.props
@@ -85,6 +101,12 @@ class NavComponent extends React.Component {
                     <Button onClick={this.showTogglePortfolio}>Toggle Portfolio</Button>
                     <Button onClick={this.showConfigureGrid}>Configure Grid</Button>
                     <Button>Tactical Weights</Button>
+                    <label className="switch switch-flat" style={{top: 10}}>
+                    	<input className="switch-input" type="checkbox"
+                            checked={this.state.showPercentage} onChange={this.onChangeDispMode}/>
+                    	<span className="switch-label" data-on="percentage" data-off="dollar"></span>
+                    	<span className="switch-handle"></span>
+                    </label>
                 </Panel>
 
                 <Modal show={this.state.showPortSelect} onHide={this.closeTogglePortfolio}>

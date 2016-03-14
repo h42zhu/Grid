@@ -33,6 +33,12 @@ function GridActionHandler (state, action) {
             vtree: {},
             portlist: action.meta.portlist.map(item => item['port_id'])
           }
+      case ACTIONS.TOGGLEDISP:
+          return {
+              heir: state.heir,
+              cols: state.cols,
+              dispMode: action.disp
+          }
       }
 
 }
@@ -42,6 +48,7 @@ function GridReducer (state, action) {
         case ACTIONS.REQUESTDATA:
         case ACTIONS.EDITCELL:
         case ACTIONS.RECEIVEDATA:
+        case ACTIONS.TOGGLEDISP:
             return _.assign({}, state,
                 {[action.comp]: GridActionHandler(state[action.comp], action)})
 

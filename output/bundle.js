@@ -40125,7 +40125,8 @@
 	    EDITCELL: null,
 	    REQUESTDATA: null,
 	    RECEIVEDATA: null,
-	    BUILDVTREE: null
+	    BUILDVTREE: null,
+	    TOGGLEDISP: null
 
 	});
 
@@ -52957,15 +52958,19 @@
 	        _this.closeConfigureGrid = _this.closeConfigureGrid.bind(_this);
 	        _this.onRefreshPortlist = _this.onRefreshPortlist.bind(_this);
 	        _this.onRefreshConfigGrid = _this.onRefreshConfigGrid.bind(_this);
+	        _this.onChangeDispMode = _this.onChangeDispMode.bind(_this);
 	        return _this;
 	    }
 
 	    (0, _createClass3.default)(NavComponent, [{
 	        key: 'componentWillMount',
 	        value: function componentWillMount() {
+	            var dispMode = this.props.dispMode;
+	            var checked = dispMode == 'percentage';
 	            this.setState({
 	                showPortSelect: false,
-	                showConfigGrid: false
+	                showConfigGrid: false,
+	                showPercentage: checked
 	            });
 	        }
 	    }, {
@@ -53042,6 +53047,18 @@
 	            actions.buildVTree(data, portlist, newHier, newCols, dispMode);
 	        }
 	    }, {
+	        key: 'onChangeDispMode',
+	        value: function onChangeDispMode() {
+	            var actions = this.props.actions;
+	            var newDispMode = this.state.showPercentage ? 'dollar' : 'percentage';
+
+	            this.setState({
+	                showPercentage: !this.state.showPercentage
+	            });
+
+	            actions.toggleDisp(newDispMode);
+	        }
+	    }, {
 	        key: 'render',
 	        value: function render() {
 	            var _props3 = this.props;
@@ -53070,6 +53087,14 @@
 	                        _reactBootstrap.Button,
 	                        null,
 	                        'Tactical Weights'
+	                    ),
+	                    _react2.default.createElement(
+	                        'label',
+	                        { className: 'switch switch-flat', style: { top: 10 } },
+	                        _react2.default.createElement('input', { className: 'switch-input', type: 'checkbox',
+	                            checked: this.state.showPercentage, onChange: this.onChangeDispMode }),
+	                        _react2.default.createElement('span', { className: 'switch-label', 'data-on': 'percentage', 'data-off': 'dollar' }),
+	                        _react2.default.createElement('span', { className: 'switch-handle' })
 	                    )
 	                ),
 	                _react2.default.createElement(
@@ -63051,7 +63076,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.fetchData = exports.editCell = exports.buildVTree = undefined;
+	exports.toggleDisp = exports.fetchData = exports.editCell = exports.buildVTree = undefined;
 
 	var _Constants = __webpack_require__(508);
 
@@ -63104,9 +63129,18 @@
 	    };
 	}
 
+	function toggleDisp(dispMode) {
+	    return {
+	        type: _Constants.ACTIONS.TOGGLEDISP,
+	        disp: dispMode,
+	        comp: 'panel'
+	    };
+	}
+
 	exports.buildVTree = buildVTree;
 	exports.editCell = editCell;
 	exports.fetchData = fetchData;
+	exports.toggleDisp = toggleDisp;
 
 /***/ },
 /* 714 */
@@ -63374,6 +63408,12 @@
 	                    return item['port_id'];
 	                })
 	            };
+	        case _Constants.ACTIONS.TOGGLEDISP:
+	            return {
+	                heir: state.heir,
+	                cols: state.cols,
+	                dispMode: action.disp
+	            };
 	    }
 	}
 
@@ -63382,6 +63422,7 @@
 	        case _Constants.ACTIONS.REQUESTDATA:
 	        case _Constants.ACTIONS.EDITCELL:
 	        case _Constants.ACTIONS.RECEIVEDATA:
+	        case _Constants.ACTIONS.TOGGLEDISP:
 	            return _lodash2.default.assign({}, state, (0, _defineProperty3.default)({}, action.comp, GridActionHandler(state[action.comp], action)));
 
 	        case _Constants.ACTIONS.BUILDVTREE:

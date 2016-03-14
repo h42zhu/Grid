@@ -5,7 +5,8 @@ const ACTIONS = keymirror({
     EDITCELL: null,
     REQUESTDATA: null,
     RECEIVEDATA: null,
-    BUILDVTREE: null
+    BUILDVTREE: null,
+    TOGGLEDISP: null,
 
 })
 

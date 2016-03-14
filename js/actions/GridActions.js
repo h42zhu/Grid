@@ -41,5 +41,13 @@ function fetchData (url, comp='grid') {
     }
 }
 
+function toggleDisp (dispMode) {
+    return ({
+        type: ACTIONS.TOGGLEDISP,
+        disp: dispMode,
+        comp: 'panel'
+    })
+}
 
-export {buildVTree, editCell, fetchData}
+
+export {buildVTree, editCell, fetchData, toggleDisp}
